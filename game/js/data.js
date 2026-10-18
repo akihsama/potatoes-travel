@@ -93,7 +93,7 @@ PT.DATA.scenes = {
       { type: 'diary', id: 2, x: 870, y: 710 },
       { type: 'door', x: 312, y: 545, to: 'cabin', reach: 360, clickable: true, clickW: 62, clickH: 120 },   // 木屋木门：点击或走近按 E 进入
       { type: 'res', kind: 'laurel', x: 430, y: 800, zone: [340, 540] },    // 门前菜园平台
-      { type: 'res', kind: 'wood', x: 180, y: 946, zone: [260, 380] },   // 避开入境点（1P 130 / 2P 200），防止一进场景就看不见地拾取
+      { type: 'res', kind: 'wood', x: 420, y: 946, zone: [340, 560] },   // 避开各入境点（1P 130 / 2P 200 / 床旁传送 250 / 炉旁传送 985），防止一进场景就看不见地拾取
       { type: 'res', kind: 'dew', x: 1010, y: 946, zone: [900, 1150] },
       { type: 'res', kind: 'moss', x: 1270, y: 810, zone: [1180, 1370] },
     ],
@@ -113,7 +113,7 @@ PT.DATA.scenes = {
       { x: 250, y: 790, w: 280 }, { x: 600, y: 700, w: 330 }, { x: 1080, y: 790, w: 280 },
     ],
     props: [
-      { type: 'fountain', x: 768, y: 930, safeR: 175 },   // 居中喷泉：炼金 + 回 1 点心；本场景全境无敌对生物，只有材料
+      { type: 'fountain', x: 768, y: 930, safeR: 175, reach: 200 },   // 居中喷泉：炼金 + 回 1 点心；本场景全境无敌对生物，只有材料
       { type: 'part', id: 'part_heater', x: 660, y: 700 },
       { type: 'diary', id: 3, x: 1250, y: 790 },
       { type: 'res', kind: 'spring', x: 390, y: 790, zone: [290, 500] },    // 左侧平台

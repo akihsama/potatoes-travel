@@ -106,7 +106,7 @@ PT.ents = {
       if (p.buffs && p.buffs.incense > 0) src.push({ x: p.x, y: p.feetY - 40, r: 330 });
     }
     for (const pr of (PT.world.props || [])) {
-      if (pr.type === 'fountain') src.push({ x: pr.x, y: pr.y - 280, r: 260 });   // 高喷泉常亮
+      if (pr.type === 'fountain') src.push({ x: pr.x, y: pr.y - 268, r: 280 });   // 高喷泉常亮
     }
     for (const e of this.list) {
       if (e.type === 'proj' && e.alive) src.push({ x: e.x, y: e.y, r: e.light });
