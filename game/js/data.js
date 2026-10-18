@@ -32,7 +32,7 @@ PT.DATA.slots = ['lightbomb', 'bounce', 'shell', 'incense', 'sunbottle'];
 /* ---------------- 炼金台部件（解锁配方） ---------------- */
 PT.DATA.parts = {
   part_heater:    { name: '炼金炉芯',   scene: 'meadow', x: 660,  y: 700, desc: '炉膛里掉出来的核心，还烫着' },
-  part_condenser: { name: '冷凝器',     scene: 'grass',  x: 1360, y: 700, desc: '把雾变回水的装置' },
+  part_condenser: { name: '冷凝器',     scene: 'grass',  x: 1485, y: 700, desc: '把雾变回水的装置' },
   part_lens:      { name: '聚光透镜',   scene: 'forest', x: 1220, y: 700, desc: '能把一夜的星光收进一枚瓶子' },
 };
 
@@ -95,7 +95,7 @@ PT.DATA.scenes = {
       { type: 'res', kind: 'laurel', x: 430, y: 800, zone: [340, 540] },    // 门前菜园平台
       { type: 'res', kind: 'wood', x: 420, y: 946, zone: [340, 560] },   // 避开各入境点（1P 130 / 2P 200 / 床旁传送 250 / 炉旁传送 985），防止一进场景就看不见地拾取
       { type: 'res', kind: 'dew', x: 1010, y: 946, zone: [900, 1150] },
-      { type: 'res', kind: 'moss', x: 1270, y: 810, zone: [1180, 1370] },
+      { type: 'res', kind: 'moss', x: 1270, y: 810, zone: [1140, 1260] },   // 避开密林→院子 2P 落点 1336（平台3），防入场即采
     ],
     enemies: [
       { kind: 'rat', x: 380, y: 800, range: [300, 560] },
@@ -116,13 +116,13 @@ PT.DATA.scenes = {
       { type: 'fountain', x: 768, y: 930, safeR: 175, reach: 200 },   // 居中喷泉：炼金 + 回 1 点心；本场景全境无敌对生物，只有材料
       { type: 'part', id: 'part_heater', x: 660, y: 700 },
       { type: 'diary', id: 3, x: 1250, y: 790 },
-      { type: 'res', kind: 'spring', x: 390, y: 790, zone: [290, 500] },    // 左侧平台
+      { type: 'res', kind: 'spring', x: 390, y: 790, zone: [290, 430] },    // 避开程序化 load 继承点 x=500（平台1 右端），防入场即采
       { type: 'res', kind: 'moss', x: 1200, y: 790, zone: [1120, 1330] },   // 右侧平台
       { type: 'res', kind: 'spring', x: 545, y: 930, zone: [430, 630] },    // 地面左簇（避开喷泉基座 650-886）
       { type: 'res', kind: 'moss', x: 620, y: 930, zone: [430, 630] },
       { type: 'res', kind: 'moss', x: 916, y: 930, zone: [890, 1090] },     // 地面右簇
       { type: 'res', kind: 'stone', x: 995, y: 930, zone: [890, 1090] },
-      { type: 'res', kind: 'star', x: 380, y: 690, zone: [270, 500], zoneY: [650, 720] },   // 深夜坠落的星屑（平台上空，跳跃可及）
+      { type: 'res', kind: 'star', x: 380, y: 690, zone: [270, 430], zoneY: [650, 720] },   // 深夜坠落的星屑（平台上空，跳跃可及）；同避开继承点 500
     ],
     // 炼金草地 = 喷泉安全区：全场景不生成任何敌对生物（只有材料），驯化影鼠请去院子/草原/密林
     enemies: [],
@@ -139,9 +139,9 @@ PT.DATA.scenes = {
     ],
     props: [
       { type: 'sign', x: 768, y: 950, text: '草原：影鼠成群。跳到它头上压扁，或按 J 冲刺撞过去' },
-      { type: 'part', id: 'part_condenser', x: 1360, y: 700 },
+      { type: 'part', id: 'part_condenser', x: 1485, y: 700 },   // 右平台右端，避开密林→草原 1P 落点 1406 / 2P 落点 1336（part 无 grace 宽限，必须靠位置避让）
       { type: 'diary', id: 4, x: 710, y: 740 },
-      { type: 'res', kind: 'laurel', x: 320, y: 820, zone: [240, 410] },
+      { type: 'res', kind: 'laurel', x: 320, y: 820, zone: [290, 410] },   // 避开密林→草原 2P 落点 200（平台1）
       { type: 'res', kind: 'stone', x: 1120, y: 820, zone: [1040, 1210] },
       { type: 'res', kind: 'star', x: 1120, y: 690, zone: [1040, 1230], zoneY: [660, 730] },   // 草原夜空也有星屑
     ],
@@ -167,15 +167,15 @@ PT.DATA.scenes = {
       { type: 'part', id: 'part_lens', x: 1250, y: 690 },
       { type: 'diary', id: 5, x: 590, y: 710 },
       { type: 'res', kind: 'moonflower', x: 1060, y: 800, zone: [900, 1050] },
-      { type: 'res', kind: 'moonflower', x: 1240, y: 690, zone: [1190, 1390] },
+      { type: 'res', kind: 'moonflower', x: 1240, y: 690, zone: [1140, 1260] },   // 避开草原→密林 1P 1406 / 2P 1336 落点（平台4 上），防入场即采
       { type: 'res', kind: 'star', x: 990, y: 640, zone: [890, 1070], zoneY: [630, 700] },      // 星屑×4：深夜密林上空
-      { type: 'res', kind: 'star', x: 1290, y: 630, zone: [1180, 1400], zoneY: [600, 660] },
-      { type: 'res', kind: 'star', x: 700, y: 660, zone: [500, 740], zoneY: [620, 690] },
-      { type: 'res', kind: 'star', x: 300, y: 680, zone: [220, 380], zoneY: [640, 710] },
+      { type: 'res', kind: 'star', x: 1290, y: 630, zone: [1140, 1260], zoneY: [600, 660] },
+      { type: 'res', kind: 'star', x: 700, y: 660, zone: [570, 740], zoneY: [620, 690] },   // 避开测试链继承点 x=500（平台2 左端）
+      { type: 'res', kind: 'star', x: 300, y: 680, zone: [280, 400], zoneY: [640, 710] },
       { type: 'res', kind: 'wood', x: 430, y: 940, zone: [330, 540] },
       { type: 'res', kind: 'wood', x: 1450, y: 940, zone: [1380, 1520] },
       { type: 'res', kind: 'dew', x: 700, y: 940, zone: [600, 800] },
-      { type: 'res', kind: 'moss', x: 290, y: 800, zone: [220, 370] },
+      { type: 'res', kind: 'moss', x: 290, y: 800, zone: [290, 400] },   // 避开竞技场→密林 2P 落点 200（平台1）
     ],
     enemies: [
       { kind: 'moth', x: 1050, y: 640, range: [900, 1450], baseY: 640 },

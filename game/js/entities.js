@@ -16,7 +16,8 @@ PT.ents = {
   /* ---------- 工厂 ---------- */
   addRes(kind, x, y, zone, zoneY) {
     const d = PT.DATA.resources[kind];
-    const e = this.spawn({ type: 'res', kind, x, y, w: 60, h: 60, dormant: !PT.DayNight.inWindow(d.window) });
+    // grace：入场宽限期（秒）。场景加载即就位，防止玩家落点恰好压在资源上被无声拾走
+    const e = this.spawn({ type: 'res', kind, x, y, w: 60, h: 60, grace: 0.9, dormant: !PT.DayNight.inWindow(d.window) });
     if (zone) { e.zone = zone; e.zoneY = zoneY || null; this.rerollRes(e); }
     return e;
   },
@@ -147,6 +148,7 @@ PT.ents = {
         continue;
       }
       e.t = (e.t || 0) + dt;
+      if (e.type === 'res' && e.grace > 0) e.grace -= dt;   // 入场宽限计时
       switch (e.type) {
 
         /* ----- 资源 ----- */
@@ -155,7 +157,7 @@ PT.ents = {
           e.dormant = !PT.DayNight.inWindow(d.window);
           if (!e.dormant) {
             for (const p of PT.players) {
-              if (PT.aabb(p.aabb(), { x: e.x - 34, y: e.y - 34, w: 68, h: 68 })) {
+              if (e.grace <= 0 && PT.aabb(p.aabb(), { x: e.x - 34, y: e.y - 34, w: 68, h: 68 })) {
                 e.alive = false; e.respawnIn = d.respawn;   // 重生计时（游戏分钟），到点在区域内换新点
                 PT.G.res[e.kind]++;
                 PT.Audio.pickup();
@@ -488,16 +490,19 @@ PT.ents = {
         case 'res': {
           const d = PT.DATA.resources[e.kind];
           const bob = Math.sin(e.t * 3) * 4;
-          if (e.dormant) ctx.globalAlpha = 0.28;
-          PT.drawImg(ctx, d.icon, e.x, e.y + bob, 64);
-          ctx.globalAlpha = 1;
-          // 贵重时限资源（星屑/月见草/露水）引导：
-          // ① 休眠（时辰未到）→ 金色指引 pill（名称 + 时间窗），任意距离可见
-          // ② 可采但天色已暗 → 闪烁小标记，避免深夜伸手不见五指
           if (e.dormant) {
-            this.hints.push({ x: e.x, y: e.y - 96, kind: 'guide', text: `${d.name}｜${d.hint}` });
-          } else if (d.window !== 'any' && PT.DayNight.darkness() > 0.3) {
-            this.hints.push({ x: e.x, y: e.y - 96, kind: 'night', text: d.name });
+            // 休眠（时辰未到）：本体呼吸闪烁作示意，不飘文字；
+            // 仅星屑附金色指引 pill（出现条件最苛刻 00:00-04:00，需要文字说明）
+            ctx.globalAlpha = 0.30 + Math.sin(e.t * 2.2) * 0.14;
+            PT.drawImg(ctx, d.icon, e.x, e.y + bob, 64);
+            ctx.globalAlpha = 1;
+            if (e.kind === 'star') this.hints.push({ x: e.x, y: e.y - 96, kind: 'guide', text: `${d.name}｜${d.hint}` });
+          } else {
+            PT.drawImg(ctx, d.icon, e.x, e.y + bob, 64);
+            if (d.window !== 'any' && PT.DayNight.darkness() > 0.3) {
+              // 天色已暗仍可采的时限资源：星屑保留名称小标，其余只留头顶闪烁光点
+              this.hints.push({ x: e.x, y: e.y - 96, kind: e.kind === 'star' ? 'night' : 'blink', text: e.kind === 'star' ? d.name : '' });
+            }
           }
           break;
         }
@@ -604,7 +609,9 @@ PT.ents = {
     }
   },
 
-  /* 时限资源引导标记：由 main.js 在黑暗遮罩之后调用，夜间保持可见 */
+  /* 时限资源提示策略：由 main.js 在黑暗遮罩之后调用，夜间保持可见
+   * - 星屑（条件最苛刻）：休眠时金色指引 pill（名称+时间窗），夜间可采时光点+名称
+   * - 月见草/露水：不飘文字——休眠时本体呼吸闪烁，夜间可采时只留无文字闪烁光点 */
   /* 休眠 Boss 的浮尘提示（HUD 层绘制，穿透黑暗遮罩）：
    * 本体不可见是核心设定，但周身浮尘若隐若现——越近越明显，
    * 让玩家感知"这里有东西"，又不暴露形体 */
@@ -637,9 +644,22 @@ PT.ents = {
   },
 
   drawHints(ctx) {
+    const t = performance.now() / 1000;
     for (const h of this.hints) {
+      if (h.kind === 'blink') {
+        // 无文字闪烁光点：时限资源夜间可采的纯示意（替代原名称 pill）
+        const ph = Math.sin(t * 5 + h.x * 0.05) * 0.5 + 0.5;   // 0..1 脉冲相位
+        const cy = h.y - 34;
+        const g = ctx.createRadialGradient(h.x, cy, 2, h.x, cy, 26);
+        g.addColorStop(0, `rgba(255,236,180,${0.35 + ph * 0.45})`);
+        g.addColorStop(1, 'rgba(255,236,180,0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(h.x - 26, cy - 26, 52, 52);
+        ctx.fillStyle = `rgba(255,243,205,${0.45 + ph * 0.5})`;
+        ctx.beginPath(); ctx.arc(h.x, cy, 2.4 + ph * 1.2, 0, Math.PI * 2); ctx.fill();
+        continue;
+      }
       const guide = h.kind === 'guide';
-      const t = performance.now() / 1000;
       ctx.save();
       ctx.font = guide ? '500 16px "PingFang SC", sans-serif' : '600 14px "PingFang SC", sans-serif';
       ctx.textAlign = 'center';
