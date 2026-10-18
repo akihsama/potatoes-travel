@@ -1,0 +1,303 @@
+/* 土豆旅行 — 全局样式：舞台比例锁定 + 覆盖层 UI */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+  width: 100%; height: 100%;
+  background: #0d0a14;
+  overflow: hidden;
+  overscroll-behavior: none;
+  font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  color: #e8e2f0;
+  user-select: none;
+}
+#stage {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+canvas#game {
+  aspect-ratio: 3 / 2;
+  max-width: 100vw; max-height: 100vh;
+  width: min(100vw, 150vh);
+  image-rendering: pixelated;
+  background: #000;
+  box-shadow: 0 0 60px rgba(124, 92, 196, .25);
+}
+/* ---------- 覆盖层通用 ---------- */
+/* z-index 40：高于全屏钮(35)与触屏层(30)，
+   保证面板内嵌 ✕ 在小屏手机上不被悬浮按钮遮挡 */
+.overlay {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(10, 7, 18, .82);
+  z-index: 40;
+}
+.overlay.hidden, .hidden { display: none !important; }
+/* ---------- 标题 ---------- */
+.title-box { text-align: center; }
+.title-box h1 {
+  font-size: 84px; letter-spacing: 14px; color: #f0e6c8;
+  text-shadow: 0 0 34px rgba(240, 200, 120, .45), 0 4px 0 #4a3560;
+}
+.tagline { margin: 14px 0 42px; color: #9a8fc0; font-size: 17px; letter-spacing: 3px; }
+.mbtn {
+  display: block; margin: 12px auto; width: 260px; padding: 13px 0;
+  font-size: 19px; letter-spacing: 4px; color: #e8e2f0;
+  background: linear-gradient(180deg, #3a2b58, #241a3a);
+  border: 1px solid #6b4fa0; border-radius: 8px; cursor: pointer;
+  transition: transform .12s, box-shadow .12s;
+}
+.mbtn:hover { transform: translateY(-2px); box-shadow: 0 4px 18px rgba(124, 92, 196, .5); }
+.mbtn:disabled { opacity: .35; cursor: default; transform: none; box-shadow: none; }
+.hint { margin-top: 18px; color: #6f6685; font-size: 13px; letter-spacing: 1px; }
+/* ---------- 对话框 ---------- */
+.dialog-box {
+  max-width: 900px; margin: 0 40px; padding: 26px 34px;
+  background: rgba(20, 14, 34, .96);
+  border: 1px solid #5a4488; border-radius: 12px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, .6);
+}
+#dialog-text { font-size: 20px; line-height: 1.9; min-height: 66px; white-space: pre-wrap; }
+.dialog-next { display: block; text-align: right; margin-top: 10px; color: #8f7fb8; font-size: 13px; }
+/* ---------- 休息选择 ---------- */
+.sleep-box { text-align: center; }
+.sleep-box h2 { font-size: 26px; color: #f0e6c8; letter-spacing: 4px; margin-bottom: 10px; }
+.sleep-tip { font-size: 13.5px; color: #9a8fc0; letter-spacing: 1px; margin-bottom: 20px; min-height: 20px; }
+.mbtn-ghost {
+  background: transparent; border-color: rgba(150, 120, 220, .4); color: #9a8fc0;
+  font-size: 16px; padding: 10px 0;
+}
+.mbtn-ghost:hover { box-shadow: none; transform: none; border-color: rgba(180, 148, 255, .7); color: #c8b8e8; }
+/* ---------- 面板（炼金/日记/图鉴） ---------- */
+.panel {
+  width: min(860px, 92vw); max-height: 86vh;
+  max-height: 86dvh;                   /* 动态视口：移动端浏览器工具栏伸缩时不裁切面板 */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;   /* 旧版 iOS 惯性滚动 */
+  touch-action: pan-y;                 /* 显式允许纵向拖动，兼容特殊 WebView */
+  overscroll-behavior: contain;         /* 滚动不链到页面 */
+  padding: 26px 32px;
+  background: rgba(18, 13, 30, .97);
+  border: 1px solid #5a4488; border-radius: 14px;
+  box-shadow: 0 10px 50px rgba(0, 0, 0, .65);
+}
+.panel h2 { font-size: 22px; color: #d8c8f5; letter-spacing: 3px; margin-bottom: 16px; }
+/* 面板头（标题 + 右侧小按钮） */
+.panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.panel-head h2 { margin-bottom: 0; }
+.head-btns { display: flex; align-items: center; gap: 8px; }
+.pbtn {
+  padding: 7px 16px; font-size: 14px; letter-spacing: 2px;
+  color: #e8dcff; background: #3a2b58; border: 1px solid #6b4fa0; border-radius: 8px;
+  cursor: pointer; transition: transform .12s, box-shadow .12s;
+}
+.pbtn:hover { transform: translateY(-1px); box-shadow: 0 3px 14px rgba(124, 92, 196, .5); }
+/* 教程条目 */
+.tut-entry { border-left-color: #c8a04a; }
+.tut-entry .e-title { color: #f0dfae; }
+.tut-entry .e-title .tut-scene { color: #8f86a3; font-size: 13px; margin-left: 8px; }
+.res-bar { font-size: 14px; color: #a99cc9; line-height: 2; margin-bottom: 14px;
+  border-bottom: 1px dashed #3a2d55; padding-bottom: 12px; }
+.res-bar b { color: #f0e6c8; font-weight: 600; }
+/* 配方行 */
+.recipe {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 14px; margin-bottom: 10px;
+  background: #171126; border: 1px solid #342855; border-radius: 10px;
+}
+.recipe img { width: 44px; height: 44px; object-fit: contain; image-rendering: pixelated; }
+.recipe .r-info { flex: 1; }
+.recipe .r-name { font-size: 16px; color: #e8dcff; }
+.recipe .r-cost { font-size: 12.5px; color: #8f86a3; margin-top: 3px; }
+.recipe .r-cost .lack { color: #e06868; }
+.recipe button {
+  padding: 8px 18px; font-size: 14px; letter-spacing: 2px;
+  color: #fff; background: #5a3f8f; border: none; border-radius: 6px; cursor: pointer;
+}
+.recipe button:disabled { background: #2c2440; color: #6f6685; cursor: default; }
+.recipe.locked { opacity: .45; }
+.recipe.locked .r-name::after { content: " 🔒"; }
+/* 日记 / 图鉴条目 */
+.entry {
+  padding: 14px 16px; margin-bottom: 12px;
+  background: #171126; border-left: 3px solid #7c5cc4; border-radius: 0 8px 8px 0;
+}
+.entry .e-title { font-size: 15.5px; color: #d8c8f5; margin-bottom: 6px; }
+.entry .e-body { font-size: 14px; color: #a99cc9; line-height: 1.9; white-space: pre-wrap; }
+.entry.locked { opacity: .4; font-style: italic; }
+/* 触屏专用提示：桌面显示键盘说明，触屏改为滑动引导 */
+.hint-scroll { display: none; }
+@media (pointer: coarse) {
+  .panel > .hint { display: none; }
+  .panel > .hint-scroll { display: block; }
+}
+/* ---------- 小屏 / 横屏手机紧凑布局 ----------
+   面板默认排版在 667×375 横屏上溢出 360px+（只剩 2/5 配方可见），
+   此处压缩间距与字号，让更多内容进入首屏 */
+@media (max-height: 480px), (max-width: 640px) {
+  .panel { width: min(860px, 94vw); max-height: 92vh; max-height: 92dvh; padding: 14px 18px; border-radius: 10px; }
+  .panel h2 { font-size: 17px; letter-spacing: 2px; margin-bottom: 10px; }
+  .panel-head { margin-bottom: 10px; }
+  .pbtn { padding: 5px 12px; font-size: 12.5px; }
+  .res-bar { font-size: 12.5px; line-height: 1.8; margin-bottom: 8px; padding-bottom: 8px; }
+  .recipe { padding: 8px 10px; margin-bottom: 7px; gap: 10px; }
+  .recipe img { width: 34px; height: 34px; }
+  .recipe .r-name { font-size: 14px; }
+  .recipe .r-cost { font-size: 11.5px; margin-top: 2px; }
+  .recipe button { padding: 6px 14px; font-size: 13px; }
+  .entry { padding: 10px 12px; margin-bottom: 9px; }
+  .entry .e-title { font-size: 14px; margin-bottom: 4px; }
+  .entry .e-body { font-size: 12.5px; line-height: 1.7; }
+  .tut-entry .e-title .tut-scene { font-size: 11.5px; margin-left: 6px; }
+  .hint { font-size: 11.5px; }
+  .dialog-box { padding: 18px 22px; }
+  #dialog-text { font-size: 16px; line-height: 1.7; min-height: 52px; }
+}
+/* ---------- 结局 ---------- */
+.ending-box { max-width: 760px; text-align: center; padding: 0 40px; }
+#ending-text { font-size: 26px; line-height: 2.2; letter-spacing: 2px; color: #f0e6c8;
+  text-shadow: 0 0 24px rgba(240, 200, 120, .35); min-height: 120px; }
+/* ---------- toast ---------- */
+#toast {
+  position: absolute; top: 26px; left: 50%; transform: translateX(-50%);
+  padding: 10px 26px; background: rgba(20, 14, 34, .92);
+  border: 1px solid #6b4fa0; border-radius: 24px;
+  font-size: 15px; letter-spacing: 1px; color: #e8dcff; z-index: 45;
+  pointer-events: none;
+}
+/* ---------- 竖屏提示 ---------- */
+#rotate-hint {
+  position: absolute; inset: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  background: #0d0a14;
+}
+#rotate-hint.hidden { display: none !important; }
+.rotate-box { text-align: center; color: #a99cc9; }
+.rotate-icon { font-size: 64px; margin-bottom: 18px; animation: rotate-hint 1.6s ease-in-out infinite; }
+.rotate-box p { font-size: 18px; letter-spacing: 4px; }
+@keyframes rotate-hint {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(90deg); }
+}
+/* ---------- 全屏按钮（触屏） ---------- */
+.fsbtn {
+  position: absolute; top: 2.5%; right: 2.5%; z-index: 35;
+  width: clamp(52px, 7vw, 68px); height: clamp(40px, 5.6vw, 54px);
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 12px;
+  background: rgba(30, 22, 52, .46);
+  border: 2px solid rgba(150, 120, 220, .5);
+  color: #d8c8f5; letter-spacing: 1px;
+  font-size: clamp(12px, 1.7vw, 15px);
+  touch-action: none; user-select: none; -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.fsbtn:active { background: rgba(124, 92, 196, .68); border-color: #c8b0ff; color: #fff; }
+
+/* 音乐开关（右上角，置于全屏钮之上避免重叠） */
+.mutebtn {
+  position: absolute; top: 2.5%; right: calc(2.5% + clamp(58px, 8vw, 76px)); z-index: 35;
+  width: clamp(40px, 5.4vw, 52px); height: clamp(40px, 5.6vw, 54px);
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 12px;
+  background: rgba(30, 22, 52, .46);
+  border: 2px solid rgba(150, 120, 220, .5);
+  color: #d8c8f5; font-size: clamp(18px, 2.4vw, 24px);
+  touch-action: none; user-select: none; -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent; cursor: pointer;
+}
+.mutebtn:active { background: rgba(124, 92, 196, .68); border-color: #c8b0ff; color: #fff; }
+/* ---------- 触屏虚拟按键 ---------- */
+#touch-ui {
+  position: absolute; inset: 0; z-index: 30;
+  pointer-events: none; display: none;
+  --jump: clamp(58px, 9vw, 88px);
+  --sbtn: clamp(44px, 6.6vw, 64px);
+  --mini: clamp(40px, 5.6vw, 54px);
+}
+body.touch-on #touch-ui { display: block; }
+#touch-ui > *, #touch-ui .tr-row, #touch-slots, #action-cluster, .acol { pointer-events: auto; }
+/* 摇杆 */
+#stick-base {
+  position: absolute; left: 4%; bottom: 7%;
+  width: clamp(92px, 13vw, 128px); aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(124, 92, 196, .16), rgba(20, 14, 34, .34));
+  border: 2px solid rgba(150, 120, 220, .42);
+  touch-action: none;
+}
+#stick-thumb {
+  position: absolute; left: 50%; top: 50%;
+  width: 44%; aspect-ratio: 1; border-radius: 50%;
+  background: rgba(184, 152, 244, .5);
+  border: 2px solid rgba(224, 208, 255, .75);
+  transform: translate(-50%, -50%);
+}
+#stick-thumb.leaving { transition: transform .14s ease-out; }
+/* 右侧功能列 */
+#touch-right {
+  position: absolute; right: 3.5%; bottom: 6.5%;
+  display: flex; flex-direction: column; align-items: flex-end;
+  gap: clamp(7px, 1.5vh, 13px);
+}
+.tr-row { display: flex; gap: clamp(7px, 1.2vw, 11px); }
+/* 通用按钮 */
+.tbtn {
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: rgba(30, 22, 52, .46);
+  border: 2px solid rgba(150, 120, 220, .5);
+  color: #d8c8f5; letter-spacing: 2px;
+  font-size: clamp(13px, 2vw, 19px);
+  touch-action: none; user-select: none; -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.tbtn.pressed, .tbtn:active {
+  background: rgba(124, 92, 196, .68);
+  border-color: #c8b0ff; color: #fff;
+}
+.tbtn-mini {
+  width: var(--mini); aspect-ratio: 1;
+  border-radius: 12px; font-size: clamp(12px, 1.7vw, 15px); letter-spacing: 1px;
+}
+/* 动作键组 */
+#action-cluster { display: flex; align-items: flex-end; gap: clamp(8px, 1.7vw, 16px); }
+.acol { display: flex; flex-direction: column; gap: clamp(7px, 1.3vh, 11px); }
+.tbtn-jump {
+  width: var(--jump); aspect-ratio: 1;
+  font-size: clamp(17px, 2.7vw, 25px);
+  background: rgba(74, 56, 112, .55);
+  border-color: rgba(180, 148, 255, .65);
+}
+.tbtn-dash, .tbtn-action { width: var(--sbtn); aspect-ratio: 1; }
+.tbtn-tame {
+  width: var(--sbtn); aspect-ratio: 1;
+  border-color: rgba(150, 220, 150, .55); color: #c2ecc2;
+}
+.tbtn-tame.ready {
+  border-color: rgba(170, 245, 170, .95); color: #e2ffe2;
+  box-shadow: 0 0 14px rgba(140, 230, 140, .4);
+  animation: tamePulse 1.2s ease-in-out infinite;
+}
+@keyframes tamePulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(140, 230, 140, .3); }
+  50% { box-shadow: 0 0 18px rgba(140, 230, 140, .55); }
+}
+.tbtn-glow { width: var(--sbtn); aspect-ratio: 1; border-color: rgba(240, 200, 120, .55); color: #f0dfae; }
+/* 物品槽 */
+#touch-slots { display: flex; gap: clamp(5px, 0.9vw, 9px); }
+.tslot {
+  position: relative;
+  width: clamp(32px, 4.4vw, 46px); aspect-ratio: 1;
+  border-radius: 8px;
+  background: rgba(30, 22, 52, .55);
+  border: 1px solid rgba(150, 120, 220, .5);
+  display: flex; align-items: center; justify-content: center;
+  touch-action: none; -webkit-tap-highlight-color: transparent;
+}
+.tslot:active { border-color: #c8b0ff; background: rgba(124, 92, 196, .5); }
+.tslot img { width: 74%; height: 74%; object-fit: contain; image-rendering: pixelated; }
+.tslot .cnt {
+  position: absolute; right: 3px; bottom: 1px;
+  font-size: clamp(10px, 1.4vw, 12px); color: #f0e6c8;
+  text-shadow: 0 1px 2px #000;
+}
+.tslot.empty { opacity: .32; }

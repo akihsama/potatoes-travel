@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>土豆旅行 · Potato Travel</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="stage">
+  <canvas id="game" width="1536" height="1024"></canvas>
+
+  <!-- 标题画面 -->
+  <div id="title" class="overlay">
+    <div class="title-box">
+      <h1>土豆旅行</h1>
+      <p class="tagline">—— 在永夜里，把自己活成一盏灯 ——</p>
+      <button id="btn-new" class="mbtn">独自旅行</button>
+      <button id="btn-new-duo" class="mbtn">双人同行</button>
+      <button id="btn-continue" class="mbtn">继续旅程</button>
+      <p class="hint">1P：WASD · 空格 · E · L ｜ 2P：方向键 · 右Shift · ; · .</p>
+    </div>
+  </div>
+
+  <!-- 对话 / 提示框 -->
+  <div id="dialog" class="overlay hidden">
+    <div class="dialog-box">
+      <p id="dialog-text"></p>
+      <span class="dialog-next">按 E / 回车 继续 ▸</span>
+    </div>
+  </div>
+
+  <!-- 休息选择（床交互：睡到清晨 / 小憩 8 小时） -->
+  <div id="sleep-choice" class="overlay hidden">
+    <div class="sleep-box">
+      <h2>🛏 休息一下</h2>
+      <p id="sleep-tip" class="sleep-tip"></p>
+      <button id="btn-sleep-full" class="mbtn">睡到清晨</button>
+      <button id="btn-sleep-nap" class="mbtn">小憩 8 小时</button>
+      <button id="btn-sleep-cancel" class="mbtn mbtn-ghost">再想想</button>
+      <p class="hint">Esc / Q 取消</p>
+    </div>
+  </div>
+
+  <!-- 炼金台 -->
+  <div id="craft" class="overlay hidden">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>⚗ 炼金台</h2>
+        <button id="btn-craft-close" class="pbtn">✕ 关闭</button>
+      </div>
+      <div id="craft-res" class="res-bar"></div>
+      <div id="craft-list"></div>
+      <p class="hint">点击配方炼制 · 数字键 1-5 使用物品 · Q / Esc 关闭</p>
+      <p class="hint hint-scroll">↑ 上下滑动查看更多配方 · 点 ✕ 关闭</p>
+    </div>
+  </div>
+
+  <!-- 日记 -->
+  <div id="diary" class="overlay hidden">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>📖 旅行日记</h2>
+        <div class="head-btns">
+          <button id="btn-tutorial" class="pbtn">教程</button>
+          <button id="btn-diary-close" class="pbtn">✕</button>
+        </div>
+      </div>
+      <div id="diary-list"></div>
+      <p class="hint">Tab / I 关闭</p>
+      <p class="hint hint-scroll">↑ 上下滑动查看更多 · 点 ✕ 关闭</p>
+    </div>
+  </div>
+
+  <!-- 教程：指示牌收录（按场景顺序展示全部文本） -->
+  <div id="tutorial" class="overlay hidden">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>📖 教程 · 指示牌收录</h2>
+        <div class="head-btns">
+          <button id="btn-tutorial-back" class="pbtn">返回日记</button>
+          <button id="btn-tutorial-close" class="pbtn">✕</button>
+        </div>
+      </div>
+      <div id="tutorial-list"></div>
+      <p class="hint">Esc / Q 返回日记</p>
+      <p class="hint hint-scroll">↑ 上下滑动查看更多 · 点 ✕ 关闭</p>
+    </div>
+  </div>
+
+  <!-- 图鉴 -->
+  <div id="bestiary" class="overlay hidden">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>🦉 永夜图鉴</h2>
+        <button id="btn-bestiary-close" class="pbtn">✕ 关闭</button>
+      </div>
+      <div id="bestiary-list"></div>
+      <p class="hint">B 键关闭</p>
+      <p class="hint hint-scroll">↑ 上下滑动查看更多 · 点 ✕ 关闭</p>
+    </div>
+  </div>
+
+  <!-- 结局 -->
+  <div id="ending" class="overlay hidden">
+    <div class="ending-box">
+      <p id="ending-text"></p>
+      <span id="ending-next" class="dialog-next hidden">按任意键 回到标题 ▸</span>
+    </div>
+  </div>
+
+  <!-- 读取进度提示 -->
+  <div id="toast" class="hidden"></div>
+
+  <!-- 竖屏提示（触屏设备竖持时显示） -->
+  <div id="rotate-hint" class="hidden">
+    <div class="rotate-box">
+      <div class="rotate-icon">📱</div>
+      <p>请将手机横屏游玩</p>
+    </div>
+  </div>
+
+  <!-- 全屏按钮（触屏设备；标题与游玩态显示，由 touch.js 控制） -->
+  <div id="btn-fullscreen" class="fsbtn hidden">全屏</div>
+  <!-- 音乐开关（始终可见；点击或按 M 静音/恢复） -->
+  <div id="btn-mute" class="mutebtn" title="背景音乐开关（M）">🔊</div>
+
+  <!-- 触屏虚拟按键（pointer: coarse 设备或 ?touch=1 时显示） -->
+  <div id="touch-ui" class="hidden">
+    <!-- 左下：摇杆 -->
+    <div id="stick-base"><div id="stick-thumb"></div></div>
+    <!-- 右下：动作键组 -->
+    <div id="touch-right">
+      <div class="tr-row">
+        <div id="btn-diary" class="tbtn tbtn-mini">日记</div>
+        <div id="btn-bestiary" class="tbtn tbtn-mini">图鉴</div>
+      </div>
+      <div id="touch-slots"></div>
+      <div id="action-cluster">
+        <div class="acol">
+          <div id="btn-glow" class="tbtn tbtn-glow">光</div>
+          <div id="btn-dash" class="tbtn tbtn-dash">冲</div>
+        </div>
+        <div class="acol">
+          <div id="btn-action" class="tbtn tbtn-action">E</div>
+          <div id="btn-tame" class="tbtn tbtn-tame hidden">R</div>
+        </div>
+        <div id="btn-jump" class="tbtn tbtn-jump">跳</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/core.js"></script>
+<script src="js/input.js"></script>
+<script src="js/data.js"></script>
+<script src="js/save.js"></script>
+<script src="js/daynight.js"></script>
+<script src="js/player.js"></script>
+<script src="js/entities.js"></script>
+<script src="js/world.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/music.js"></script>
+    <script src="js/main.js"></script>
+<script src="js/touch.js"></script>
+</body>
+</html>

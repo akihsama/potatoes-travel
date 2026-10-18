@@ -1,0 +1,429 @@
+{
+ "game": "土豆旅行",
+ "version": "assets-v2",
+ "logical_resolution": "1536x1024 (3:2 横版)",
+ "art_style": "像素风 / 永夜蓝紫主色 / 透明底 PNG",
+ "processing": "AI 水印已清除 · 背景抠除透明底 · 按游戏用途切分 · sha1 前12位校验",
+ "groups": {
+  "character": {
+   "desc": "角色（三视图/表情/姿态）",
+   "count": 15,
+   "files": [
+    {
+     "file": "expr_glow.png",
+     "width": 281,
+     "height": 329,
+     "mode": "RGBA",
+     "bytes": 94915,
+     "sha1": "a8c413c4bdf2"
+    },
+    {
+     "file": "expr_happy.png",
+     "width": 265,
+     "height": 329,
+     "mode": "RGBA",
+     "bytes": 85269,
+     "sha1": "7d34709af23b"
+    },
+    {
+     "file": "expr_hurt.png",
+     "width": 266,
+     "height": 330,
+     "mode": "RGBA",
+     "bytes": 88337,
+     "sha1": "864fc13cfda8"
+    },
+    {
+     "file": "expr_normal.png",
+     "width": 280,
+     "height": 329,
+     "mode": "RGBA",
+     "bytes": 87878,
+     "sha1": "903fcbd8d682"
+    },
+    {
+     "file": "expr_sleep.png",
+     "width": 297,
+     "height": 360,
+     "mode": "RGBA",
+     "bytes": 97024,
+     "sha1": "74489f7e068c"
+    },
+    {
+     "file": "pose_bounce.png",
+     "width": 162,
+     "height": 334,
+     "mode": "RGBA",
+     "bytes": 80250,
+     "sha1": "1caca9c98d51"
+    },
+    {
+     "file": "pose_dash.png",
+     "width": 288,
+     "height": 193,
+     "mode": "RGBA",
+     "bytes": 82467,
+     "sha1": "5139e64da8f9"
+    },
+    {
+     "file": "pose_glow.png",
+     "width": 232,
+     "height": 256,
+     "mode": "RGBA",
+     "bytes": 87319,
+     "sha1": "7076eac35244"
+    },
+    {
+     "file": "pose_idle.png",
+     "width": 239,
+     "height": 194,
+     "mode": "RGBA",
+     "bytes": 68763,
+     "sha1": "292149a40fde"
+    },
+    {
+     "file": "pose_roll.png",
+     "width": 259,
+     "height": 221,
+     "mode": "RGBA",
+     "bytes": 87835,
+     "sha1": "ad12cb534a66"
+    },
+    {
+     "file": "pose_squash.png",
+     "width": 220,
+     "height": 137,
+     "mode": "RGBA",
+     "bytes": 44349,
+     "sha1": "9696dc48bfed"
+    },
+    {
+     "file": "three_view.png",
+     "width": 1536,
+     "height": 1024,
+     "mode": "RGB",
+     "bytes": 1535639,
+     "sha1": "1c3af72b18d2"
+    },
+    {
+     "file": "view_back.png",
+     "width": 450,
+     "height": 379,
+     "mode": "RGBA",
+     "bytes": 230817,
+     "sha1": "c83835bdecb6"
+    },
+    {
+     "file": "view_front.png",
+     "width": 473,
+     "height": 378,
+     "mode": "RGBA",
+     "bytes": 244595,
+     "sha1": "096076c1b36f"
+    },
+    {
+     "file": "view_side.png",
+     "width": 442,
+     "height": 387,
+     "mode": "RGBA",
+     "bytes": 233204,
+     "sha1": "be1c600136f6"
+    }
+   ]
+  },
+  "enemies": {
+   "desc": "敌人（3+1）",
+   "count": 8,
+   "files": [
+    {
+     "file": "boss_front.png",
+     "width": 552,
+     "height": 934,
+     "mode": "RGBA",
+     "bytes": 445021,
+     "sha1": "15c338577404"
+    },
+    {
+     "file": "boss_side.png",
+     "width": 849,
+     "height": 649,
+     "mode": "RGBA",
+     "bytes": 459265,
+     "sha1": "cd361a107c40"
+    },
+    {
+     "file": "golem_front.png",
+     "width": 673,
+     "height": 697,
+     "mode": "RGBA",
+     "bytes": 537566,
+     "sha1": "63dcd61eba74"
+    },
+    {
+     "file": "golem_side.png",
+     "width": 545,
+     "height": 705,
+     "mode": "RGBA",
+     "bytes": 426720,
+     "sha1": "0b66c22eeb7e"
+    },
+    {
+     "file": "moth_front.png",
+     "width": 570,
+     "height": 471,
+     "mode": "RGBA",
+     "bytes": 228526,
+     "sha1": "e575f012b385"
+    },
+    {
+     "file": "moth_side.png",
+     "width": 441,
+     "height": 511,
+     "mode": "RGBA",
+     "bytes": 173779,
+     "sha1": "aeac236af69d"
+    },
+    {
+     "file": "rat_front.png",
+     "width": 609,
+     "height": 830,
+     "mode": "RGBA",
+     "bytes": 519861,
+     "sha1": "3e10da4f58ce"
+    },
+    {
+     "file": "rat_side.png",
+     "width": 793,
+     "height": 649,
+     "mode": "RGBA",
+     "bytes": 536446,
+     "sha1": "c3796b4a583a"
+    }
+   ]
+  },
+  "items": {
+   "desc": "资源与道具",
+   "count": 12,
+   "files": [
+    {
+     "file": "item_bounce.png",
+     "width": 186,
+     "height": 329,
+     "mode": "RGBA",
+     "bytes": 54717,
+     "sha1": "02cf1bb7640a"
+    },
+    {
+     "file": "item_incense.png",
+     "width": 313,
+     "height": 248,
+     "mode": "RGBA",
+     "bytes": 39318,
+     "sha1": "27df1b2c6591"
+    },
+    {
+     "file": "item_lightbomb.png",
+     "width": 216,
+     "height": 231,
+     "mode": "RGBA",
+     "bytes": 48324,
+     "sha1": "0ea5cb895258"
+    },
+    {
+     "file": "item_shell.png",
+     "width": 250,
+     "height": 249,
+     "mode": "RGBA",
+     "bytes": 56429,
+     "sha1": "97de0d0d48e0"
+    },
+    {
+     "file": "item_sunbottle.png",
+     "width": 184,
+     "height": 328,
+     "mode": "RGBA",
+     "bytes": 53745,
+     "sha1": "c939e220f98d"
+    },
+    {
+     "file": "res_dew.png",
+     "width": 114,
+     "height": 188,
+     "mode": "RGBA",
+     "bytes": 32423,
+     "sha1": "1f510032f375"
+    },
+    {
+     "file": "res_laurel.png",
+     "width": 201,
+     "height": 213,
+     "mode": "RGBA",
+     "bytes": 58620,
+     "sha1": "02abf1624ee5"
+    },
+    {
+     "file": "res_moonflower.png",
+     "width": 218,
+     "height": 211,
+     "mode": "RGBA",
+     "bytes": 70643,
+     "sha1": "f7764321b454"
+    },
+    {
+     "file": "res_moss.png",
+     "width": 236,
+     "height": 146,
+     "mode": "RGBA",
+     "bytes": 52359,
+     "sha1": "297d35538d13"
+    },
+    {
+     "file": "res_spring.png",
+     "width": 130,
+     "height": 243,
+     "mode": "RGBA",
+     "bytes": 51937,
+     "sha1": "94eee517789b"
+    },
+    {
+     "file": "res_star.png",
+     "width": 115,
+     "height": 194,
+     "mode": "RGBA",
+     "bytes": 34057,
+     "sha1": "0404ae7a87c7"
+    },
+    {
+     "file": "res_stone.png",
+     "width": 195,
+     "height": 172,
+     "mode": "RGBA",
+     "bytes": 46920,
+     "sha1": "8ad04433f23b"
+    }
+   ]
+  },
+  "ui": {
+   "desc": "UI 元素",
+   "count": 6,
+   "files": [
+    {
+     "file": "ui_clock.png",
+     "width": 349,
+     "height": 345,
+     "mode": "RGBA",
+     "bytes": 170593,
+     "sha1": "cf93f26cdcaa"
+    },
+    {
+     "file": "ui_diary.png",
+     "width": 347,
+     "height": 423,
+     "mode": "RGBA",
+     "bytes": 207902,
+     "sha1": "98d23b3032f7"
+    },
+    {
+     "file": "ui_heart.png",
+     "width": 270,
+     "height": 345,
+     "mode": "RGBA",
+     "bytes": 132734,
+     "sha1": "d4387f9b723b"
+    },
+    {
+     "file": "ui_signpost.png",
+     "width": 334,
+     "height": 423,
+     "mode": "RGBA",
+     "bytes": 186904,
+     "sha1": "ac33f14b2e75"
+    },
+    {
+     "file": "ui_slot.png",
+     "width": 355,
+     "height": 423,
+     "mode": "RGBA",
+     "bytes": 210375,
+     "sha1": "f6ea5b9240fe"
+    },
+    {
+     "file": "ui_stamina.png",
+     "width": 510,
+     "height": 345,
+     "mode": "RGBA",
+     "bytes": 227251,
+     "sha1": "8f7c1af7a0f6"
+    }
+   ]
+  },
+  "scenes": {
+   "desc": "场景全幅背景",
+   "count": 7,
+   "files": [
+    {
+     "file": "scene1_cabin.png",
+     "width": 1536,
+     "height": 1024,
+     "mode": "RGB",
+     "bytes": 2049690,
+     "sha1": "7b4ae418d787"
+    },
+    {
+     "file": "scene1_yard.png",
+     "width": 1536,
+     "height": 1024,
+     "mode": "RGB",
+     "bytes": 1368454,
+     "sha1": "795008f6e484"
+    },
+    {
+     "file": "scene2_alchemy.png",
+     "width": 1536,
+     "height": 1024,
+     "mode": "RGB",
+     "bytes": 2401748,
+     "sha1": "a0362bb49ee6"
+    },
+    {
+     "file": "scene3_grassland.png",
+     "width": 1536,
+     "height": 1024,
+     "mode": "RGB",
+     "bytes": 1864741,
+     "sha1": "c6420f442959"
+    },
+    {
+     "file": "scene4_forest.png",
+     "width": 1536,
+     "height": 1024,
+     "mode": "RGB",
+     "bytes": 2218534,
+     "sha1": "f5d423e3a15d"
+    },
+    {
+     "file": "scene_boss_arena.png",
+     "width": 1536,
+     "height": 1024,
+     "mode": "RGB",
+     "bytes": 2118721,
+     "sha1": "ab0712cbc0ea"
+    },
+    {
+     "file": "title.png",
+     "width": 1536,
+     "height": 1024,
+     "mode": "RGB",
+     "bytes": 1345736,
+     "sha1": "ff43107394fb"
+    }
+   ]
+  }
+ },
+ "raw_archive": {
+  "dir": "assets/_raw",
+  "note": "20 张 AI 原始生成图存档，请勿删除"
+ },
+ "total_files": 48,
+ "total_bytes": 21578720
+}
