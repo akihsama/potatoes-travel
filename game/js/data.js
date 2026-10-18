@@ -62,8 +62,9 @@ PT.DATA.bestiary = {
 
 /* ---------------- 场景定义 ----------------
  * ground: 实心地面；plats: 可站平台（含单向，从下方可跳上）
- * props: bed 床 / fountain 喷泉炼金台 / chest 宝箱 / sign 路牌 / diary 日记 / part 部件
- * res:   资源点；enemies: 敌人；exits: 边缘传送区 */
+ * props: bed 床 / fountain 喷泉炼金台 / chest 宝箱 / sign 路牌 / diary 日记 / part 部件 / door 木门
+ * res:   资源点；zone:[x1,x2] / zoneY:[y1,y2] 给定生成区域时，采集物在区域内随机落点（重生时换新点）
+ * enemies: 敌人；exits: 边缘传送区 */
 PT.DATA.scenes = {
   cabin: {
     name: '木屋', bg: 'scene_cabin',
@@ -72,11 +73,11 @@ PT.DATA.scenes = {
       { x: 150, y: 770, w: 230 }, { x: 1120, y: 790, w: 280 }, { x: 620, y: 690, w: 240 },
     ],
     props: [
-      { type: 'bed', x: 1390, y: 916 },
-      { type: 'stove', x: 640, y: 916 },
-      { type: 'sign', x: 200, y: 916, text: '木屋：床可以一觉睡到清晨（回满体力并存档）· 炉火由苔藓加木头合成（1 苔藓 + 1 木头 = 2 小时）· 右侧出门是院子' },
-      { type: 'diary', id: 1, x: 1260, y: 790 },
-      { type: 'res', kind: 'moss', x: 265, y: 770 },
+      { type: 'bed', x: 250, y: 916 },                 // 床在画面左侧（背景床艺术 x≈0-420）
+      { type: 'stove', x: 985, y: 916 },               // 对齐背景右侧壁炉（炉膛中心 x≈965）
+      { type: 'sign', x: 1300, y: 916, text: '木屋：床可以一觉睡到清晨（回满体力并存档）· 炉火由苔藓加木头合成（1 苔藓 + 1 木头 = 2 小时）· 右侧出门是院子' },
+      { type: 'diary', id: 1, x: 730, y: 690 },        // 书桌上摊开的日记（平台 620-860 / y690）
+      { type: 'res', kind: 'moss', x: 265, y: 770, zone: [180, 350] },   // 窗台平台区域内随机
     ],
     enemies: [],
     exits: [{ x: 1480, y: 830, w: 56, h: 86, to: 'yard', at: 'left', text: '前往院子' }],
@@ -88,19 +89,20 @@ PT.DATA.scenes = {
       { x: 300, y: 800, w: 260 }, { x: 720, y: 710, w: 300 }, { x: 1140, y: 810, w: 260 }, { x: 520, y: 620, w: 130 },
     ],
     props: [
-      { type: 'sign', x: 768, y: 946, text: '路牌：西→木屋（床可休息至清晨）· 东→炼金草地 · 清晨 05:00-08:00 草丛凝结露水' },
+      { type: 'sign', x: 768, y: 946, text: '路牌：西→木屋（点击木屋木门进入，床可休息至清晨）· 东→炼金草地 · 清晨 05:00-08:00 草丛凝结露水' },
       { type: 'diary', id: 2, x: 870, y: 710 },
-      { type: 'res', kind: 'laurel', x: 430, y: 800 },
-      { type: 'res', kind: 'wood', x: 180, y: 946 },
-      { type: 'res', kind: 'dew', x: 1010, y: 946 },
-      { type: 'res', kind: 'moss', x: 1270, y: 810 },
+      { type: 'door', x: 312, y: 545, to: 'cabin', reach: 360, clickable: true, clickW: 62, clickH: 120 },   // 木屋木门：点击或走近按 E 进入
+      { type: 'res', kind: 'laurel', x: 430, y: 800, zone: [340, 540] },    // 门前菜园平台
+      { type: 'res', kind: 'wood', x: 180, y: 946, zone: [260, 380] },   // 避开入境点（1P 130 / 2P 200），防止一进场景就看不见地拾取
+      { type: 'res', kind: 'dew', x: 1010, y: 946, zone: [900, 1150] },
+      { type: 'res', kind: 'moss', x: 1270, y: 810, zone: [1180, 1370] },
     ],
     enemies: [
       { kind: 'rat', x: 380, y: 800, range: [300, 560] },
       { kind: 'rat', x: 1250, y: 810, range: [1140, 1400] },
     ],
+    // 进入木屋改为：院子画面中点击木屋木门（或走近按 E）；不再保留左缘隐形传送区
     exits: [
-      { x: 0, y: 830, w: 56, h: 116, to: 'cabin', at: 'right', text: '回到木屋' },
       { x: 1480, y: 830, w: 56, h: 116, to: 'meadow', at: 'left', text: '前往炼金草地' },
     ],
   },
@@ -114,12 +116,13 @@ PT.DATA.scenes = {
       { type: 'fountain', x: 768, y: 930, safeR: 175 },   // 居中喷泉：炼金 + 回 1 点心；本场景全境无敌对生物，只有材料
       { type: 'part', id: 'part_heater', x: 660, y: 700 },
       { type: 'diary', id: 3, x: 1250, y: 790 },
-      { type: 'res', kind: 'spring', x: 390, y: 790 },
-      { type: 'res', kind: 'moss', x: 1200, y: 790 },
-      { type: 'res', kind: 'spring', x: 545, y: 930 },
-      { type: 'res', kind: 'moss', x: 620, y: 930 },
-      { type: 'res', kind: 'moss', x: 916, y: 930 },
-      { type: 'res', kind: 'stone', x: 995, y: 930 },
+      { type: 'res', kind: 'spring', x: 390, y: 790, zone: [290, 500] },    // 左侧平台
+      { type: 'res', kind: 'moss', x: 1200, y: 790, zone: [1120, 1330] },   // 右侧平台
+      { type: 'res', kind: 'spring', x: 545, y: 930, zone: [430, 630] },    // 地面左簇（避开喷泉基座 650-886）
+      { type: 'res', kind: 'moss', x: 620, y: 930, zone: [430, 630] },
+      { type: 'res', kind: 'moss', x: 916, y: 930, zone: [890, 1090] },     // 地面右簇
+      { type: 'res', kind: 'stone', x: 995, y: 930, zone: [890, 1090] },
+      { type: 'res', kind: 'star', x: 380, y: 690, zone: [270, 500], zoneY: [650, 720] },   // 深夜坠落的星屑（平台上空，跳跃可及）
     ],
     // 炼金草地 = 喷泉安全区：全场景不生成任何敌对生物（只有材料），驯化影鼠请去院子/草原/密林
     enemies: [],
@@ -138,8 +141,9 @@ PT.DATA.scenes = {
       { type: 'sign', x: 768, y: 950, text: '草原：影鼠成群。跳到它头上压扁，或按 J 冲刺撞过去' },
       { type: 'part', id: 'part_condenser', x: 1360, y: 700 },
       { type: 'diary', id: 4, x: 710, y: 740 },
-      { type: 'res', kind: 'laurel', x: 320, y: 820 },
-      { type: 'res', kind: 'stone', x: 1120, y: 820 },
+      { type: 'res', kind: 'laurel', x: 320, y: 820, zone: [240, 410] },
+      { type: 'res', kind: 'stone', x: 1120, y: 820, zone: [1040, 1210] },
+      { type: 'res', kind: 'star', x: 1120, y: 690, zone: [1040, 1230], zoneY: [660, 730] },   // 草原夜空也有星屑
     ],
     enemies: [
       { kind: 'rat', x: 260, y: 820, range: [200, 440] },
@@ -162,13 +166,16 @@ PT.DATA.scenes = {
       { type: 'sign', x: 120, y: 940, text: '浓雾警告：雾中潜伏雾蛾与不可见之物。解雾香可驱散浓雾；夜间采集月见草（18:00-06:00）与星屑（00:00-04:00）' },
       { type: 'part', id: 'part_lens', x: 1250, y: 690 },
       { type: 'diary', id: 5, x: 590, y: 710 },
-      { type: 'res', kind: 'moonflower', x: 1060, y: 800 },
-      { type: 'res', kind: 'moonflower', x: 1240, y: 690 },
-      { type: 'res', kind: 'star', x: 990, y: 620 },
-      { type: 'res', kind: 'wood', x: 430, y: 940 },
-      { type: 'res', kind: 'wood', x: 1450, y: 940 },
-      { type: 'res', kind: 'dew', x: 700, y: 940 },
-      { type: 'res', kind: 'moss', x: 290, y: 800 },
+      { type: 'res', kind: 'moonflower', x: 1060, y: 800, zone: [900, 1050] },
+      { type: 'res', kind: 'moonflower', x: 1240, y: 690, zone: [1190, 1390] },
+      { type: 'res', kind: 'star', x: 990, y: 640, zone: [890, 1070], zoneY: [630, 700] },      // 星屑×4：深夜密林上空
+      { type: 'res', kind: 'star', x: 1290, y: 630, zone: [1180, 1400], zoneY: [600, 660] },
+      { type: 'res', kind: 'star', x: 700, y: 660, zone: [500, 740], zoneY: [620, 690] },
+      { type: 'res', kind: 'star', x: 300, y: 680, zone: [220, 380], zoneY: [640, 710] },
+      { type: 'res', kind: 'wood', x: 430, y: 940, zone: [330, 540] },
+      { type: 'res', kind: 'wood', x: 1450, y: 940, zone: [1380, 1520] },
+      { type: 'res', kind: 'dew', x: 700, y: 940, zone: [600, 800] },
+      { type: 'res', kind: 'moss', x: 290, y: 800, zone: [220, 370] },
     ],
     enemies: [
       { kind: 'moth', x: 1050, y: 640, range: [900, 1450], baseY: 640 },

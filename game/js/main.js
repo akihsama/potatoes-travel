@@ -20,6 +20,17 @@ PT.main = {
     PT.ui.init();
     PT.Music.init();
 
+    // 画布点击：命中可点击道具（木屋木门）。画布无相机，按显示缩放换算世界坐标。
+    cv.addEventListener('pointerdown', e => {
+      if (PT.main.state !== 'play' || PT.ui.open) return;
+      if (PT._actx && PT._actx.state === 'suspended') PT._actx.resume();
+      const r = cv.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) return;
+      const wx = (e.clientX - r.left) / r.width * PT.W;
+      const wy = (e.clientY - r.top) / r.height * PT.H;
+      PT.world.tryClickProp(wx, wy);
+    });
+
     // 结局：任意键推进
     window.addEventListener('keydown', () => {
       if (PT.main.state === 'ending' && PT.ui.ending) PT.ui.endingAnyKey();

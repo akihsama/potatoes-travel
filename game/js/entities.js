@@ -14,9 +14,18 @@ PT.ents = {
   },
 
   /* ---------- 工厂 ---------- */
-  addRes(kind, x, y) {
+  addRes(kind, x, y, zone, zoneY) {
     const d = PT.DATA.resources[kind];
-    return this.spawn({ type: 'res', kind, x, y, w: 60, h: 60, dormant: !PT.DayNight.inWindow(d.window) });
+    const e = this.spawn({ type: 'res', kind, x, y, w: 60, h: 60, dormant: !PT.DayNight.inWindow(d.window) });
+    if (zone) { e.zone = zone; e.zoneY = zoneY || null; this.rerollRes(e); }
+    return e;
+  },
+
+  /* 采集物在生成区域内随机落点（无区域则保持原坐标） */
+  rerollRes(e) {
+    if (!e.zone) return;
+    e.x = PT.rand(e.zone[0], e.zone[1]);
+    if (e.zoneY) e.y = PT.rand(e.zoneY[0], e.zoneY[1]);
   },
   addPickup(kind, id, x, y, name) {   // kind: 'diary' | 'part'
     return this.spawn({ type: 'pickup', kind, id, x, y, name, w: 70, h: 70 });
@@ -97,7 +106,7 @@ PT.ents = {
       if (p.buffs && p.buffs.incense > 0) src.push({ x: p.x, y: p.feetY - 40, r: 330 });
     }
     for (const pr of (PT.world.props || [])) {
-      if (pr.type === 'fountain') src.push({ x: pr.x, y: pr.y - 110, r: 200 });   // 高喷泉常亮
+      if (pr.type === 'fountain') src.push({ x: pr.x, y: pr.y - 280, r: 260 });   // 高喷泉常亮
     }
     for (const e of this.list) {
       if (e.type === 'proj' && e.alive) src.push({ x: e.x, y: e.y, r: e.light });
@@ -119,8 +128,24 @@ PT.ents = {
 
   /* ---------- 主更新 ---------- */
   update(dt) {
+    // 本帧游戏分钟增量（供资源重生计时；时钟跨午夜取模，故用差值）
+    const nowT = PT.G.time;
+    const dMin = (nowT - (this._lastT == null ? nowT : this._lastT) + 1440) % 1440;
+    this._lastT = nowT;
     for (const e of this.list) {
-      if (!e.alive) continue;
+      // 资源重生：计时（游戏分钟）归零后，在原生成区域内换一个新随机点复活
+      if (!e.alive) {
+        if (e.type === 'res' && e.respawnIn > 0) {
+          e.respawnIn -= dMin;
+          if (e.respawnIn <= 0) {
+            e.alive = true;
+            this.rerollRes(e);
+            e.dormant = !PT.DayNight.inWindow(PT.DATA.resources[e.kind].window);
+            this.spark(e.x, e.y - 30);
+          }
+        }
+        continue;
+      }
       e.t = (e.t || 0) + dt;
       switch (e.type) {
 
@@ -131,7 +156,7 @@ PT.ents = {
           if (!e.dormant) {
             for (const p of PT.players) {
               if (PT.aabb(p.aabb(), { x: e.x - 34, y: e.y - 34, w: 68, h: 68 })) {
-                e.alive = false; e.respawnAt = PT.DayNight.hour() * 60 + d.respawn;
+                e.alive = false; e.respawnIn = d.respawn;   // 重生计时（游戏分钟），到点在区域内换新点
                 PT.G.res[e.kind]++;
                 PT.Audio.pickup();
                 this.pop(e.x, e.y - 60, `+${d.name}`, '#9fd89f');

@@ -25,7 +25,7 @@ PT.world = {
     // 实体重建
     PT.ents.clear();
     S.props.forEach(p => {
-      if (p.type === 'res') PT.ents.addRes(p.kind, p.x, p.y);
+      if (p.type === 'res') PT.ents.addRes(p.kind, p.x, p.y, p.zone, p.zoneY);
       else if (p.type === 'diary' || p.type === 'part') PT.ents.addPickup(p.type, p.id, p.x, p.y, PT.DATA.parts[p.id] ? PT.DATA.parts[p.id].name : '日记残页');
       else this.props.push(Object.assign({}, p));
     });
@@ -110,17 +110,32 @@ PT.world = {
   },
 
   /* ---------------- 交互 ---------------- */
-  /* 任一玩家均可交互：扫描所有玩家，返回最近的 { prop, who } */
+  /* 任一玩家均可交互：扫描所有玩家，返回最近的 { prop, who }（prop.reach 可覆盖默认 130） */
   nearestProp() {
-    let best = null, who = null, bd = 130;
+    let best = null, who = null, bd = Infinity;
     for (const p of PT.players) {
       for (const pr of this.props) {
         if (pr.type === 'diary' || pr.type === 'part' || pr.type === 'res') continue;
         const d = Math.hypot(pr.x - p.x, pr.y - p.feetY);
-        if (d < bd) { bd = d; best = pr; who = p; }
+        if (d < bd && d < (pr.reach || 130)) { bd = d; best = pr; who = p; }
       }
     }
     return best ? { prop: best, who } : null;
+  },
+
+  /* 画布点击命中可点击道具（木屋木门：院子画面中点击进入）。
+   * 画布无相机，世界坐标 = 画布坐标；调用方负责把屏幕坐标按画布缩放换算。 */
+  tryClickProp(wx, wy) {
+    if (this.transition || this.freeze) return false;
+    for (const pr of this.props) {
+      if (!pr.clickable) continue;
+      const hw = pr.clickW || 60, hh = pr.clickH || 110;
+      if (Math.abs(wx - pr.x) <= hw && wy >= pr.y - hh && wy <= pr.y + hh * 0.6) {
+        this.interact(pr);
+        return true;
+      }
+    }
+    return false;
   },
 
   interact(pr) {
@@ -153,6 +168,12 @@ PT.world = {
       }
       case 'bed':
         PT.ui.openSleepChoice();
+        break;
+      case 'door':
+        // 木屋木门：进入屋内（与出口区传送等价，落点在门内右侧）
+        this.goTo(pr.to, 'right');
+        PT.ui.toast('推开木门，走进木屋');
+        PT.Save.save();
         break;
       case 'chest':
         if (!PT.G.flags.chestTaken) {
@@ -299,6 +320,26 @@ PT.world = {
     for (const pr of this.props) {
       if (pr.type === 'sign') {
         PT.drawImg(ctx, 'ui_signpost', pr.x, pr.y, 120);
+      } else if (pr.type === 'door') {
+        // 木屋木门（背景图已有门体）：暖灯光溢 + 浮动提示，表明可点击进入
+        const t = performance.now() / 1000;
+        const g = ctx.createRadialGradient(pr.x, pr.y - 25, 6, pr.x, pr.y - 25, 120);
+        g.addColorStop(0, 'rgba(255,196,110,.22)');
+        g.addColorStop(1, 'rgba(255,196,110,0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(pr.x - 120, pr.y - 145, 240, 240);
+        // 浮动小标签（靠近时由交互提示接管，此处负责远处可发现性）
+        const bob = Math.sin(t * 2.2) * 3;
+        ctx.font = '500 15px "PingFang SC", sans-serif';
+        ctx.textAlign = 'center';
+        const lw = 108, lx = pr.x - lw / 2, ly = pr.y - 78 + bob;
+        ctx.fillStyle = 'rgba(16,11,28,.72)';
+        ctx.beginPath(); ctx.roundRect(lx, ly - 14, lw, 24, 7); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,196,110,.5)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.roundRect(lx, ly - 14, lw, 24, 7); ctx.stroke();
+        ctx.fillStyle = '#ffd9a0';
+        ctx.fillText('点击 · 进入木屋', pr.x, ly + 3);
       } else if (pr.type === 'bed') {
         const z = Math.sin(performance.now() / 600) * 4;
         ctx.font = '600 26px serif'; ctx.textAlign = 'center';
@@ -308,12 +349,12 @@ PT.world = {
       } else if (pr.type === 'fountain') {
         // 居中高喷泉：三层石盆 + 高水柱；四周堆满瓶瓶罐罐；E 互动恢复 1 点心并打开炼金
         const fx = pr.x, fy = pr.y, t = performance.now() / 1000;
-        // 环境光晕（更大更高）
-        const ag = ctx.createRadialGradient(fx, fy - 110, 10, fx, fy - 110, 210);
+        // 环境光晕（覆盖整座高喷泉）
+        const ag = ctx.createRadialGradient(fx, fy - 280, 10, fx, fy - 280, 330);
         ag.addColorStop(0, 'rgba(120,220,210,.16)');
         ag.addColorStop(1, 'rgba(120,220,210,0)');
         ctx.fillStyle = ag;
-        ctx.fillRect(fx - 210, fy - 320, 420, 420);
+        ctx.fillRect(fx - 330, fy - 610, 660, 660);
 
         /* ---- 四周堆满的瓶瓶罐罐（画在石盆后方）---- */
         const bottle = (dx, h, c, tilt, wide) => {
@@ -333,22 +374,18 @@ PT.world = {
           ctx.beginPath(); ctx.roundRect(-5, -h + 4, 3, h - 10, 2); ctx.fill();
           ctx.restore();
         };
-        // 后圈大堆（左右各 4 只，高低错落）
+        // 后圈大堆（左右各 4 只，高低错落；外移让出三层石阶）
         const pileBack = [
-          [-196, 46, '#9fd89f', -0.14], [-168, 54, '#c8b0ff', 0.10], [-140, 40, '#e89fb0', -0.06], [-112, 50, '#8fd8e8', 0.08],
-          [ 112, 44, '#f0c86a', -0.09], [ 140, 52, '#9fd89f', 0.11], [ 168, 42, '#a8b8ff', -0.07], [ 196, 48, '#f09868', 0.13],
+          [-206, 46, '#9fd89f', -0.14], [-178, 54, '#c8b0ff', 0.10], [-150, 40, '#e89fb0', -0.06], [-128, 50, '#8fd8e8', 0.08],
+          [ 128, 44, '#f0c86a', -0.09], [ 150, 52, '#9fd89f', 0.11], [ 178, 42, '#a8b8ff', -0.07], [ 206, 48, '#f09868', 0.13],
         ];
         for (const [dx, h, c, tl] of pileBack) bottle(dx, h, c, tl, h >= 46);
-        // 前圈堆高（左右各 3 只，挡住后圈盆口）
+        // 前圈堆高（左右各 3 只，错落挡住后圈）
         const pileFront = [
-          [-178, 34, '#f0c86a', 0.16, true], [-150, 42, '#8fd8e8', -0.11], [-122, 30, '#c8b0ff', 0.06],
-          [ 122, 36, '#e89fb0', -0.14, true], [ 150, 44, '#f09868', 0.09], [ 178, 32, '#9fd89f', -0.05],
+          [-190, 34, '#f0c86a', 0.16, true], [-162, 42, '#8fd8e8', -0.11], [-138, 30, '#c8b0ff', 0.06],
+          [ 138, 36, '#e89fb0', -0.14, true], [ 162, 44, '#f09868', 0.09], [ 190, 32, '#9fd89f', -0.05],
         ];
         for (const [dx, h, c, tl, w] of pileFront) bottle(dx, h, c, tl, !!w);
-        // 盆根小罐（趴在底层大盆沿上）
-        for (const [dx, h, c] of [[-84, 22, '#a8b8ff'], [-68, 27, '#9fd89f'], [68, 24, '#f0c86a'], [84, 28, '#e89fb0']]) {
-          bottle(dx, h, c, 0.04, false);
-        }
         // 躺倒的瓶（斜靠在堆上，左右各 2 只）
         const lying = (dx, c) => {
           ctx.save();
@@ -362,96 +399,142 @@ PT.world = {
           ctx.beginPath(); ctx.roundRect(-4.5, -35, 9, 5, 2); ctx.fill();
           ctx.restore();
         };
-        lying(-206, '#8fd8e8'); lying(-152, '#f09868'); lying(206, '#c8b0ff'); lying(152, '#9fd89f');
-        /* ---- 三层高喷泉 ---- */
-        const col = (y0, y1, w0, w1, c) => {                  // 梯形石柱
-          ctx.fillStyle = c;
-          ctx.beginPath();
-          ctx.moveTo(fx - w0 / 2, y0); ctx.lineTo(fx + w0 / 2, y0);
-          ctx.lineTo(fx + w1 / 2, y1); ctx.lineTo(fx - w1 / 2, y1);
-          ctx.closePath(); ctx.fill();
+        lying(-218, '#8fd8e8'); lying(-162, '#f09868'); lying(218, '#c8b0ff'); lying(162, '#9fd89f');
+        /* ---- 古希腊式高喷泉（三层石阶 + 双盆 + 凹槽石柱，总高约 560px）---- */
+        const SD = '#4f4a68', SM = '#6f6a8c', SL = '#8e88a8', SH = '#aea7c4';   // 大理石色阶
+        // 凹槽石柱（梯形 + 受光面 + 两道竖槽）
+        const column = (y0, y1, w0, w1) => {
+            ctx.fillStyle = SM;
+            ctx.beginPath();
+            ctx.moveTo(fx - w0 / 2, y0); ctx.lineTo(fx + w0 / 2, y0);
+            ctx.lineTo(fx + w1 / 2, y1); ctx.lineTo(fx - w1 / 2, y1);
+            ctx.closePath(); ctx.fill();
+            ctx.fillStyle = SL;                                        // 受光面
+            ctx.beginPath();
+            ctx.moveTo(fx - w0 * 0.08, y0); ctx.lineTo(fx + w0 * 0.34, y0);
+            ctx.lineTo(fx + w1 * 0.34, y1); ctx.lineTo(fx - w1 * 0.08, y1);
+            ctx.closePath(); ctx.fill();
+            ctx.strokeStyle = 'rgba(20,16,34,.28)'; ctx.lineWidth = 2;  // 凹槽
+            for (const k of [-0.3, 0.06]) {
+                ctx.beginPath();
+                ctx.moveTo(fx + w0 * k, y0 + 2); ctx.lineTo(fx + w1 * k, y1 - 2);
+                ctx.stroke();
+            }
         };
-        // 底层大盆
-        ctx.fillStyle = '#3a3448';
-        ctx.beginPath(); ctx.ellipse(fx, fy + 6, 122, 22, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#4a4360';
-        ctx.beginPath(); ctx.ellipse(fx, fy - 14, 112, 30, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#5a5274';
-        ctx.beginPath(); ctx.ellipse(fx, fy - 19, 106, 26, 0, 0, Math.PI * 2); ctx.fill();
-        // 底层水面 + 涟漪
-        const wg = ctx.createRadialGradient(fx, fy - 21, 4, fx, fy - 21, 92);
-        wg.addColorStop(0, '#a8f0e4');
-        wg.addColorStop(0.55, '#5ec8d8');
-        wg.addColorStop(1, '#2a7a9a');
-        ctx.fillStyle = wg;
-        ctx.beginPath(); ctx.ellipse(fx, fy - 21, 90, 20, 0, 0, Math.PI * 2); ctx.fill();
-        for (let i = 0; i < 2; i++) {
-          const ph = (t * 0.8 + i * 0.5) % 1;
-          ctx.strokeStyle = `rgba(255,255,255,${(1 - ph) * 0.35})`;
-          ctx.lineWidth = 2;
-          ctx.beginPath(); ctx.ellipse(fx, fy - 21, 18 + ph * 60, (18 + ph * 60) * 0.28, 0, 0, Math.PI * 2); ctx.stroke();
+        // 科林斯式柱头（外翻环 + 受光环）
+        const capital = (y, rx) => {
+            ctx.fillStyle = SD;
+            ctx.beginPath(); ctx.ellipse(fx, y + 5, rx + 7, 10, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = SM;
+            ctx.beginPath(); ctx.ellipse(fx, y, rx, 8, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = SH;
+            ctx.beginPath(); ctx.ellipse(fx, y - 2, rx - 3, 6, 0, 0, Math.PI * 2); ctx.fill();
+        };
+        // 水盆（外沿 + 受光 + 内壁水深 + 水面渐变）
+        const basin = (y, rx, ry, waterRx, deep) => {
+            ctx.fillStyle = SD;
+            ctx.beginPath(); ctx.ellipse(fx, y + 7, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = SM;
+            ctx.beginPath(); ctx.ellipse(fx, y, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = SL;
+            ctx.beginPath(); ctx.ellipse(fx, y - 2, rx - 4, ry - 2, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = deep ? '#3f5a78' : '#46648a';
+            ctx.beginPath(); ctx.ellipse(fx, y - 1, rx - 10, ry - 4, 0, 0, Math.PI * 2); ctx.fill();
+            const wg = ctx.createRadialGradient(fx, y - 3, 2, fx, y - 3, waterRx);
+            wg.addColorStop(0, deep ? '#b8f4ea' : '#a8f0e4');
+            wg.addColorStop(0.55, '#5ec8d8');
+            wg.addColorStop(1, '#2a7a9a');
+            ctx.fillStyle = wg;
+            ctx.beginPath(); ctx.ellipse(fx, y - 3, waterRx, Math.max(4, ry - 6), 0, 0, Math.PI * 2); ctx.fill();
+        };
+        // 涟漪
+        const ripple = (y, rx, n) => {
+            for (let i = 0; i < n; i++) {
+                const ph = (t * 0.8 + i * 0.5) % 1;
+                ctx.strokeStyle = `rgba(255,255,255,${(1 - ph) * 0.35})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.ellipse(fx, y, 12 + ph * rx, (12 + ph * rx) * 0.28, 0, 0, Math.PI * 2); ctx.stroke();
+            }
+        };
+        // 水帘（盆沿溢流，微微摆动）
+        const sheet = (x0, y0, y1, w, a) => {
+            const sg = ctx.createLinearGradient(0, y0, 0, y1);
+            sg.addColorStop(0, `rgba(205,246,253,${a})`);
+            sg.addColorStop(1, `rgba(160,220,240,${a * 0.45})`);
+            ctx.fillStyle = sg;
+            const wob = Math.sin(t * 5 + x0 * 0.1) * 1.6;
+            ctx.beginPath();
+            ctx.moveTo(x0 - w / 2, y0);
+            ctx.quadraticCurveTo(x0 - w / 2 + wob, (y0 + y1) / 2, x0 - w / 2, y1);
+            ctx.lineTo(x0 + w / 2, y1);
+            ctx.quadraticCurveTo(x0 + w / 2 + wob, (y0 + y1) / 2, x0 + w / 2, y0);
+            ctx.closePath(); ctx.fill();
+        };
+        // 三层石阶基座
+        for (const [sy, srx, sry] of [[fy - 6, 118, 19], [fy - 21, 102, 16], [fy - 35, 88, 13]]) {
+            ctx.fillStyle = SD; ctx.beginPath(); ctx.ellipse(fx, sy + 3, srx, sry, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = SM; ctx.beginPath(); ctx.ellipse(fx, sy, srx, sry, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = SL; ctx.beginPath(); ctx.ellipse(fx, sy - 2, srx - 7, sry - 2, 0, 0, Math.PI * 2); ctx.fill();
         }
-        // 中央石柱（下粗上细，带受光面）
-        col(fy - 22, fy - 106, 42, 26, '#3f3a52');
-        col(fy - 22, fy - 106, 22, 13, '#524b6e');
-        // 中层盆
-        ctx.fillStyle = '#3a3448';
-        ctx.beginPath(); ctx.ellipse(fx, fy - 100, 78, 16, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#4a4360';
-        ctx.beginPath(); ctx.ellipse(fx, fy - 105, 72, 15, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#5a5274';
-        ctx.beginPath(); ctx.ellipse(fx, fy - 108, 68, 13, 0, 0, Math.PI * 2); ctx.fill();
-        // 中层水
-        const wg2 = ctx.createRadialGradient(fx, fy - 109, 3, fx, fy - 109, 58);
-        wg2.addColorStop(0, '#b8f4ea');
-        wg2.addColorStop(0.6, '#62ccdc');
-        wg2.addColorStop(1, '#2a7a9a');
-        ctx.fillStyle = wg2;
-        ctx.beginPath(); ctx.ellipse(fx, fy - 109, 56, 11, 0, 0, Math.PI * 2); ctx.fill();
-        // 上层小柱
-        col(fy - 108, fy - 150, 22, 14, '#3f3a52');
-        col(fy - 108, fy - 150, 12, 8, '#524b6e');
-        // 顶碗
-        ctx.fillStyle = '#3a3448';
-        ctx.beginPath(); ctx.ellipse(fx, fy - 145, 44, 10, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#5a5274';
-        ctx.beginPath(); ctx.ellipse(fx, fy - 149, 40, 9, 0, 0, Math.PI * 2); ctx.fill();
-        const wg3 = ctx.createRadialGradient(fx, fy - 150, 2, fx, fy - 150, 32);
-        wg3.addColorStop(0, '#c8f8f0');
-        wg3.addColorStop(1, '#3a8aa8');
-        ctx.fillStyle = wg3;
-        ctx.beginPath(); ctx.ellipse(fx, fy - 150, 32, 7, 0, 0, Math.PI * 2); ctx.fill();
-        // ---- 高水柱（顶碗冲天）----
-        const jet = 64 + Math.sin(t * 6) * 13;
-        const jg = ctx.createLinearGradient(fx, fy - 150, fx, fy - 150 - jet);
+        // 下层大盆 + 涟漪
+        basin(fy - 45, 84, 17, 70, true);
+        ripple(fy - 48, 58, 2);
+        // 下柱 + 柱头
+        column(fy - 52, fy - 345, 46, 30);
+        capital(fy - 345, 40);
+        // 中层盆 + 涟漪
+        basin(fy - 353, 52, 12, 42, false);
+        ripple(fy - 356, 34, 2);
+        // 上柱 + 柱头
+        column(fy - 360, fy - 482, 30, 20);
+        capital(fy - 482, 30);
+        // 顶盆 + 涟漪
+        basin(fy - 490, 34, 9, 26, false);
+        ripple(fy - 493, 20, 1);
+        // 尖顶（圆肚 + 宝珠）
+        ctx.fillStyle = SM;
+        ctx.beginPath(); ctx.ellipse(fx, fy - 500, 13, 12, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = SL;
+        ctx.beginPath(); ctx.ellipse(fx, fy - 503, 10, 8, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = SH;
+        ctx.beginPath(); ctx.arc(fx, fy - 516, 4.5, 0, Math.PI * 2); ctx.fill();
+        // ---- 层层水帘（顶盆→中盆→大盆）----
+        sheet(fx - 27, fy - 488, fy - 358, 7, 0.75);
+        sheet(fx + 27, fy - 488, fy - 358, 7, 0.75);
+        sheet(fx - 42, fy - 351, fy - 52, 9, 0.65);
+        sheet(fx + 42, fy - 351, fy - 52, 9, 0.65);
+        // ---- 顶层冲天水柱 ----
+        const jet = 58 + Math.sin(t * 6) * 12;
+        const jg = ctx.createLinearGradient(fx, fy - 493, fx, fy - 493 - jet);
         jg.addColorStop(0, 'rgba(210,252,255,.95)');
         jg.addColorStop(1, 'rgba(210,252,255,0)');
         ctx.fillStyle = jg;
         ctx.beginPath();
-        ctx.moveTo(fx - 8, fy - 150);
-        ctx.quadraticCurveTo(fx - 12, fy - 150 - jet * 0.6, fx, fy - 150 - jet);
-        ctx.quadraticCurveTo(fx + 12, fy - 150 - jet * 0.6, fx + 8, fy - 150);
+        ctx.moveTo(fx - 8, fy - 493);
+        ctx.quadraticCurveTo(fx - 12, fy - 493 - jet * 0.6, fx, fy - 493 - jet);
+        ctx.quadraticCurveTo(fx + 12, fy - 493 - jet * 0.6, fx + 8, fy - 493);
         ctx.closePath(); ctx.fill();
-        // 飞溅水珠（顶碗上方弧线）
+        // 顶层飞溅水珠
         for (let i = 0; i < 6; i++) {
-          const dp = (t * 1.5 + i * 0.27) % 1;
-          const dx2 = Math.sin(dp * 9 + i * 2.1) * 42;
-          ctx.fillStyle = `rgba(220,250,255,${(1 - dp) * 0.8})`;
-          ctx.beginPath(); ctx.arc(fx + dx2, fy - 156 - dp * 56, 2.5, 0, Math.PI * 2); ctx.fill();
+            const dp = (t * 1.5 + i * 0.27) % 1;
+            const dx2 = Math.sin(dp * 9 + i * 2.1) * 40;
+            ctx.fillStyle = `rgba(220,250,255,${(1 - dp) * 0.8})`;
+            ctx.beginPath(); ctx.arc(fx + dx2, fy - 500 - dp * 54, 2.5, 0, Math.PI * 2); ctx.fill();
         }
-        // 中层接水的水花（顶碗落水回流）
+        // 中层 / 下层接水水花
         for (let i = 0; i < 3; i++) {
-          const dp = (t * 1.1 + i * 0.4) % 1;
-          const dx2 = Math.sin(dp * 7 + i * 1.7) * 26;
-          ctx.fillStyle = `rgba(200,244,250,${(1 - dp) * 0.6})`;
-          ctx.beginPath(); ctx.arc(fx + dx2, fy - 111 - dp * 12, 2, 0, Math.PI * 2); ctx.fill();
+            const dp = (t * 1.1 + i * 0.4) % 1;
+            const dx2 = Math.sin(dp * 7 + i * 1.7) * 24;
+            ctx.fillStyle = `rgba(200,244,250,${(1 - dp) * 0.6})`;
+            ctx.beginPath(); ctx.arc(fx + dx2, fy - 357 - dp * 12, 2, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(fx + dx2 * 1.6, fy - 51 - dp * 12, 2.5, 0, Math.PI * 2); ctx.fill();
         }
         // ---- 血量未满时喷泉上方浮一颗心（提示可回心）----
         if (PT.G.hp < PT.G.maxHp) {
-          const hy = fy - 246 + Math.sin(t * 3) * 5;
-          ctx.font = '600 26px serif'; ctx.textAlign = 'center';
-          ctx.fillStyle = 'rgba(255,150,180,.9)';
-          ctx.fillText('♥', fx, hy);
+            const hy = fy - 580 + Math.sin(t * 3) * 5;
+            ctx.font = '600 26px serif'; ctx.textAlign = 'center';
+            ctx.fillStyle = 'rgba(255,150,180,.9)';
+            ctx.fillText('♥', fx, hy);
         }
       } else if (pr.type === 'chest') {
         const opened = PT.G.flags.chestTaken;
@@ -467,54 +550,97 @@ PT.world = {
       } else if (pr.type === 'stove') {
         const lit = PT.G.stove > 0;
         const sx = pr.x, sy = pr.y;
-        // 石炉体
-        ctx.fillStyle = '#3a3448';
-        ctx.beginPath(); ctx.roundRect(sx - 48, sy - 92, 96, 92, 8); ctx.fill();
-        ctx.fillStyle = '#4a4360';
-        ctx.beginPath(); ctx.roundRect(sx - 40, sy - 100, 80, 22, 6); ctx.fill();
-        // 炉膛
-        ctx.fillStyle = '#14101f';
-        ctx.beginPath(); ctx.roundRect(sx - 28, sy - 56, 56, 56, 6); ctx.fill();
-        if (lit) {
-          // 跳动的炉火（光晕 + 内外两层火苗）
-          const t = performance.now() / 1000;
-          const fl = 1 + Math.sin(t * 9) * 0.12;
-          ctx.save();
-          ctx.globalCompositeOperation = 'lighter';
-          const fg = ctx.createRadialGradient(sx, sy - 30, 4, sx, sy - 30, 90 * fl);
-          fg.addColorStop(0, 'rgba(255,190,90,.5)');
-          fg.addColorStop(1, 'rgba(255,140,40,0)');
-          ctx.fillStyle = fg;
-          ctx.fillRect(sx - 90, sy - 124, 180, 190);
-          ctx.fillStyle = '#ff9a3c';
-          ctx.beginPath();
-          ctx.moveTo(sx - 16 * fl, sy - 8);
-          ctx.quadraticCurveTo(sx - 20 * fl, sy - 44 * fl, sx, sy - 58 * fl);
-          ctx.quadraticCurveTo(sx + 20 * fl, sy - 44 * fl, sx + 16 * fl, sy - 8);
-          ctx.closePath(); ctx.fill();
-          ctx.fillStyle = '#ffd76a';
-          ctx.beginPath();
-          ctx.moveTo(sx - 8, sy - 10);
-          ctx.quadraticCurveTo(sx - 10, sy - 32, sx, sy - 42);
-          ctx.quadraticCurveTo(sx + 10, sy - 32, sx + 8, sy - 10);
-          ctx.closePath(); ctx.fill();
-          ctx.restore();
+        const t = performance.now() / 1000;
+        if (this.current === 'cabin') {
+          // 木屋：背景图已有石砌壁炉，只画炉火/熄灭状态，避免双重炉体
+          const fx0 = sx - 20, fy0 = sy - 86;               // 炉膛中心（对齐背景壁炉）
+          if (lit) {
+            const fl = 1 + Math.sin(t * 9) * 0.12;
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            const fg = ctx.createRadialGradient(fx0, fy0, 4, fx0, fy0, 110 * fl);
+            fg.addColorStop(0, 'rgba(255,190,90,.5)');
+            fg.addColorStop(1, 'rgba(255,140,40,0)');
+            ctx.fillStyle = fg;
+            ctx.fillRect(fx0 - 115, fy0 - 130, 230, 250);
+            ctx.fillStyle = '#ff9a3c';                       // 外层火苗
+            ctx.beginPath();
+            ctx.moveTo(fx0 - 26 * fl, fy0 + 36);
+            ctx.quadraticCurveTo(fx0 - 30 * fl, fy0 - 16 * fl, fx0, fy0 - 44 * fl);
+            ctx.quadraticCurveTo(fx0 + 30 * fl, fy0 - 16 * fl, fx0 + 26 * fl, fy0 + 36);
+            ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#ffd76a';                       // 内层火苗
+            ctx.beginPath();
+            ctx.moveTo(fx0 - 12, fy0 + 32);
+            ctx.quadraticCurveTo(fx0 - 14, fy0 - 2, fx0, fy0 - 22);
+            ctx.quadraticCurveTo(fx0 + 14, fy0 - 2, fx0 + 12, fy0 + 32);
+            ctx.closePath(); ctx.fill();
+            ctx.restore();
+          } else {
+            // 熄灭：暗炉膛压住背景火焰 + 一缕余烟
+            ctx.fillStyle = 'rgba(12,9,20,.92)';
+            ctx.beginPath(); ctx.roundRect(fx0 - 56, fy0 - 52, 112, 104, 10); ctx.fill();
+            ctx.strokeStyle = 'rgba(150,140,170,.35)';
+            ctx.lineWidth = 2;
+            const sw = Math.sin(t * 1.4) * 8;
+            ctx.beginPath();
+            ctx.moveTo(fx0, fy0 - 52);
+            ctx.quadraticCurveTo(fx0 + sw, fy0 - 80, fx0 - sw * 0.5, fy0 - 110);
+            ctx.stroke();
+          }
+          ctx.font = '500 15px "PingFang SC", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillStyle = lit ? '#f0c86a' : '#6f6685';
+          ctx.fillText(lit ? `炉火 ${Math.floor(PT.G.stove)}/10 小时` : '炉火已熄灭', fx0, fy0 - 66);
         } else {
-          ctx.fillStyle = '#2a2438';
-          ctx.beginPath(); ctx.ellipse(sx, sy - 30, 20, 8, 0, 0, Math.PI * 2); ctx.fill();
+          // 石炉体
+          ctx.fillStyle = '#3a3448';
+          ctx.beginPath(); ctx.roundRect(sx - 48, sy - 92, 96, 92, 8); ctx.fill();
+          ctx.fillStyle = '#4a4360';
+          ctx.beginPath(); ctx.roundRect(sx - 40, sy - 100, 80, 22, 6); ctx.fill();
+          // 炉膛
+          ctx.fillStyle = '#14101f';
+          ctx.beginPath(); ctx.roundRect(sx - 28, sy - 56, 56, 56, 6); ctx.fill();
+          if (lit) {
+            // 跳动的炉火（光晕 + 内外两层火苗）
+            const fl = 1 + Math.sin(t * 9) * 0.12;
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            const fg = ctx.createRadialGradient(sx, sy - 30, 4, sx, sy - 30, 90 * fl);
+            fg.addColorStop(0, 'rgba(255,190,90,.5)');
+            fg.addColorStop(1, 'rgba(255,140,40,0)');
+            ctx.fillStyle = fg;
+            ctx.fillRect(sx - 90, sy - 124, 180, 190);
+            ctx.fillStyle = '#ff9a3c';
+            ctx.beginPath();
+            ctx.moveTo(sx - 16 * fl, sy - 8);
+            ctx.quadraticCurveTo(sx - 20 * fl, sy - 44 * fl, sx, sy - 58 * fl);
+            ctx.quadraticCurveTo(sx + 20 * fl, sy - 44 * fl, sx + 16 * fl, sy - 8);
+            ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#ffd76a';
+            ctx.beginPath();
+            ctx.moveTo(sx - 8, sy - 10);
+            ctx.quadraticCurveTo(sx - 10, sy - 32, sx, sy - 42);
+            ctx.quadraticCurveTo(sx + 10, sy - 32, sx + 8, sy - 10);
+            ctx.closePath(); ctx.fill();
+            ctx.restore();
+          } else {
+            ctx.fillStyle = '#2a2438';
+            ctx.beginPath(); ctx.ellipse(sx, sy - 30, 20, 8, 0, 0, Math.PI * 2); ctx.fill();
+          }
+          // 耐久标签
+          ctx.font = '500 15px "PingFang SC", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillStyle = lit ? '#f0c86a' : '#6f6685';
+          ctx.fillText(lit ? `炉火 ${Math.floor(PT.G.stove)}/10 小时` : '炉火已熄灭', sx, sy - 114);
         }
-        // 耐久标签
-        ctx.font = '500 15px "PingFang SC", sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = lit ? '#f0c86a' : '#6f6685';
-        ctx.fillText(lit ? `炉火 ${Math.floor(PT.G.stove)}/10 小时` : '炉火已熄灭', sx, sy - 114);
       }
     }
 
     // 交互提示（按靠近者显示对应按键：1P=E，2P=;）
     if (this.nearProp) {
       const pr = this.nearProp;
-      let label = { bed: '休息', fountain: '炼金', chest: '开宝箱', sign: '查看', stove: '合成炉火' }[pr.type] || '交互';
+      let label = { bed: '休息', fountain: '炼金', chest: '开宝箱', sign: '查看', stove: '合成炉火', door: '进入木屋' }[pr.type] || '交互';
       if (pr.type === 'fountain' && PT.G.hp < PT.G.maxHp) label = '炼金 · 回心';   // 残血时提示喷泉可回心
       const keyHint = this.nearWho && this.nearWho.slot === 2 ? ';' : 'E';
       ctx.font = '500 20px "PingFang SC", sans-serif';
