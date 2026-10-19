@@ -301,3 +301,56 @@ body.touch-on #touch-ui { display: block; }
   text-shadow: 0 1px 2px #000;
 }
 .tslot.empty { opacity: .32; }
+
+/* ---------- 结局彩蛋：壁炉中的遗书 ---------- */
+/* 第一阶段：纸张落在画面中央（点击打开特写） */
+#letter-drop {
+  position: absolute; inset: 0; z-index: 45;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px; cursor: pointer;
+}
+#letter-drop-paper {
+  width: clamp(104px, 13.5vmin, 168px); aspect-ratio: 640 / 880;
+  background-size: 100% 100%; background-repeat: no-repeat;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, .55));
+  animation: letter-bob 3.2s ease-in-out infinite;
+}
+@keyframes letter-bob {
+  0%, 100% { transform: translateY(0) rotate(-1.5deg); }
+  50% { transform: translateY(-10px) rotate(1.5deg); }
+}
+.letter-drop-label {
+  font-size: 15px; letter-spacing: 3px; color: #e8d9b8;
+  text-shadow: 0 1px 3px #000, 0 0 14px rgba(240, 200, 120, .35);
+}
+.letter-drop-tip {
+  font-size: 12.5px; letter-spacing: 2px; color: #a99cc9;
+  text-shadow: 0 1px 3px #000;
+  animation: letter-tip-blink 1.6s ease-in-out infinite;
+}
+@keyframes letter-tip-blink {
+  0%, 100% { opacity: .45; }
+  50% { opacity: 1; }
+}
+/* 第二阶段：全屏透明背景道具特写 */
+#letter-view { background: rgba(8, 6, 14, .55); }
+.letter-frame {
+  display: flex; flex-direction: column; align-items: center; gap: 18px;
+  max-height: 92%;
+}
+#letter-paper {
+  width: min(62vmin, 560px); height: min(84vmin, 772px);
+  background-size: 100% 100%; background-repeat: no-repeat;
+  transform: rotate(-.6deg);
+  filter: drop-shadow(0 10px 42px rgba(0, 0, 0, .7));
+  padding: 7.5% 8.5% 8% 9%;
+  overflow: hidden;
+}
+#letter-text { height: 100%; overflow: hidden; }
+.letter-line {
+  font-family: Georgia, 'Times New Roman', 'Songti SC', serif;
+  font-style: italic; font-size: clamp(14px, 2.05vmin, 21px);
+  line-height: 1.95; color: #3a2a18; margin: 0 0 .9em;
+  text-shadow: 0 0 1px rgba(58, 42, 24, .35);
+}
+.letter-line:last-child { margin-bottom: 0; }

@@ -188,6 +188,12 @@ PT.world = {
         } else PT.ents.pop(pr.x, pr.y - 120, '已经空了', '#8f86a3');
         break;
       case 'stove': {
+        // 结局彩蛋：永夜解除后，壁炉灰烬里藏着爷爷最后一张笔记
+        if (PT.G.flags.dawn) {
+          if (!PT.G.flags.letterRead) PT.ui.showLetterDrop();
+          else PT.ui.toast('壁炉里只剩灰烬了……那张笔记你已经带在身上');
+          break;
+        }
         // 炉火合成：苔藓 ×1 + 木头 ×1 = 2 小时耐久，上限 10
         const need = 10 - PT.G.stove;
         if (need <= 0) { PT.ui.toast('炉火正旺，无需添柴'); break; }

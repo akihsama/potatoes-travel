@@ -204,6 +204,11 @@ PT.main = {
       if (I.justPressed('cancel')) PT.ui.closeSleepChoice();
       return;
     }
+    if (PT.ui.open === 'letter') {
+      // 结局彩蛋：遗书全屏特写（Esc/Q/回车 收起）
+      if (I.justPressed('cancel') || I.justPressed('confirm')) PT.ui.closeLetter();
+      return;
+    }
     // 游戏中：面板开关
     if (I.justPressed('diary')) { PT.ui.openDiary(); return; }
     if (I.justPressed('bestiary')) { PT.ui.openBestiary(); return; }

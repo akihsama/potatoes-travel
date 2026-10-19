@@ -2,7 +2,7 @@
  * ui.js — HUD（canvas）+ 覆盖面板（DOM）：对话/炼金/日记/图鉴/睡眠/结局
  * ============================================================ */
 PT.ui = {
-  open: null,                 // null | 'dialog' | 'craft' | 'diary' | 'tutorial' | 'bestiary' | 'sleep'
+  open: null,                 // null | 'dialog' | 'craft' | 'diary' | 'tutorial' | 'bestiary' | 'sleep' | 'letter'
   type: null,                 // 打字机状态
   toastT: 0,
   sleep: null,                // { phase:'out'|'in', t }
@@ -31,6 +31,9 @@ PT.ui = {
     this.$('btn-diary-close').onclick = () => this.closeDiary();
     this.$('btn-tutorial-close').onclick = () => this.closeTutorial();
     this.$('btn-bestiary-close').onclick = () => this.closeBestiary();
+    // 结局彩蛋：壁炉遗书（中央道具点击 → 全屏特写 → 关闭）
+    this.$('letter-drop').onclick = () => this.openLetter();
+    this.$('btn-letter-close').onclick = () => this.closeLetter();
     // 背景音乐开关
     this.$('btn-mute').onclick = () => PT.Music.toggleMute();
     this.setMuteIcon(PT.Music.enabled);
@@ -421,6 +424,118 @@ PT.ui = {
       PT.main.afterEnding();     // 演出结束：恢复光明，回到自由活动（而非退回标题）
     } else {
       this._endingAdvance();
+    }
+  },
+
+  /* ---------------- 结局彩蛋：爷爷的最后笔记 ----------------
+   * 流程：永夜解除后点击壁炉 → showLetterDrop（纸张落于画面中央）
+   *       → 点击纸张 → openLetter（全屏特写，英文斜体）
+   *       → 关闭 → flags.letterRead 落账并存档 */
+  _paperURL: null,               // 纸张纹理 dataURL 缓存（运行时 canvas 生成）
+
+  /* 运行时绘制"烧毁半边的泛黄纸张"纹理（无外部资源依赖） */
+  letterPaperURL() {
+    if (this._paperURL) return this._paperURL;
+    const W = 640, H = 880;
+    const c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    const x = c.getContext('2d');
+    const rnd = (a, b) => a + Math.random() * (b - a);
+
+    // 泛黄纸底（左上亮 → 右下沉）
+    const g = x.createLinearGradient(0, 0, W, H);
+    g.addColorStop(0, '#e6d6ae'); g.addColorStop(0.55, '#d6c298'); g.addColorStop(1, '#c3ab7d');
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
+
+    // 纤维噪点 + 横向细丝（旧纸质感）
+    for (let i = 0; i < 2800; i++) {
+      x.fillStyle = `rgba(${rnd(90, 150) | 0},${rnd(70, 120) | 0},${rnd(40, 85) | 0},${Math.random() * 0.10})`;
+      x.fillRect(Math.random() * W, Math.random() * H, 1.4, 1.4);
+    }
+    x.lineWidth = 1;
+    for (let i = 0; i < 90; i++) {
+      const y0 = Math.random() * H, len = rnd(30, 130), sx = Math.random() * W;
+      x.strokeStyle = `rgba(120,95,60,${rnd(0.04, 0.10)})`;
+      x.beginPath(); x.moveTo(sx, y0); x.lineTo(sx + len, y0 + rnd(-2, 2)); x.stroke();
+    }
+    // 陈旧折痕（横两道、竖一道）
+    x.strokeStyle = 'rgba(120,95,60,.16)'; x.lineWidth = 2;
+    for (const fy of [0.24, 0.58]) {
+      x.beginPath(); x.moveTo(0, H * fy); x.lineTo(W, H * fy + rnd(-3, 3)); x.stroke();
+    }
+    x.beginPath(); x.moveTo(W * 0.47, 0); x.lineTo(W * 0.47, H); x.stroke();
+    // 淡褐水渍
+    for (let i = 0; i < 5; i++) {
+      const bx = rnd(0, W * 0.7), by = rnd(0, H * 0.7), r = rnd(24, 70);
+      const sg = x.createRadialGradient(bx, by, 4, bx, by, r);
+      sg.addColorStop(0, `rgba(140,105,55,${rnd(0.05, 0.12)})`); sg.addColorStop(1, 'rgba(140,105,55,0)');
+      x.fillStyle = sg; x.beginPath(); x.arc(bx, by, r, 0, Math.PI * 2); x.fill();
+    }
+
+    // 烧毁半边：右下角大片焦黑（多个重叠椭圆 + 边缘柔化）
+    x.save();
+    if (x.filter !== undefined) x.filter = 'blur(3px)';
+    x.fillStyle = '#241a12';
+    for (const [ex, ey, er] of [[0.88, 0.70, 0.36], [0.72, 0.98, 0.30], [1.02, 0.38, 0.24], [0.98, 0.92, 0.30]]) {
+      x.beginPath(); x.ellipse(W * ex, H * ey, W * er, H * er * 0.92, 0, 0, Math.PI * 2); x.fill();
+    }
+    x.restore();
+    // 焦边余烬（橙红细弧，沿焦区内侧）
+    x.save();
+    if (x.filter !== undefined) x.filter = 'blur(2px)';
+    x.strokeStyle = 'rgba(196,88,36,.42)'; x.lineWidth = 7;
+    for (const [ex, ey, er] of [[0.86, 0.68, 0.345], [0.72, 0.97, 0.285], [1.0, 0.38, 0.225]]) {
+      x.beginPath(); x.ellipse(W * ex, H * ey, W * er, H * er * 0.9, 0, Math.PI * 0.9, Math.PI * 1.9); x.stroke();
+    }
+    x.restore();
+    // 焦洞（纸面零星烧穿）
+    for (let i = 0; i < 8; i++) {
+      const bx = rnd(W * 0.55, W * 0.99), by = rnd(H * 0.5, H * 0.99);
+      x.beginPath(); x.ellipse(bx, by, rnd(3, 11), rnd(3, 8), rnd(0, 3), 0, Math.PI * 2);
+      x.fillStyle = `rgba(22,14,9,${rnd(0.7, 0.92)})`; x.fill();
+    }
+    // 纸张整体旧化暗角
+    const v = x.createRadialGradient(W / 2, H / 2, W * 0.30, W / 2, H / 2, W * 0.78);
+    v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(92,62,22,.30)');
+    x.fillStyle = v; x.fillRect(0, 0, W, H);
+
+    this._paperURL = c.toDataURL('image/png');
+    return this._paperURL;
+  },
+
+  showLetterDrop() {
+    if (PT.G.flags.letterRead || this.open === 'letter') return;
+    this.$('letter-drop-paper').style.backgroundImage = `url(${this.letterPaperURL()})`;
+    this.$('letter-drop').classList.remove('hidden');
+    PT.Audio.page();
+    PT.ui.toast('壁炉的灰烬里，有一张烧毁半边的泛黄纸张……');
+  },
+
+  hideLetterDrop() { this.$('letter-drop').classList.add('hidden'); },
+
+  openLetter() {
+    this.hideLetterDrop();
+    this.open = 'letter';                    // 借用 ui.open 门控：特写期间世界暂停
+    const box = this.$('letter-text');
+    box.innerHTML = '';
+    for (const line of PT.DATA.secretLetter) {
+      const p = document.createElement('p');
+      p.className = 'letter-line';
+      p.textContent = line;
+      box.appendChild(p);
+    }
+    this.$('letter-paper').style.backgroundImage = `url(${this.letterPaperURL()})`;
+    this.$('letter-view').classList.remove('hidden');
+    PT.Audio.page();
+  },
+
+  closeLetter() {
+    this.open = null;
+    this.$('letter-view').classList.add('hidden');
+    if (!PT.G.flags.letterRead) {
+      PT.G.flags.letterRead = true;
+      PT.Save.save();
+      this.toast('你轻轻抚平焦脆的纸页，把它收进了怀里。');
     }
   },
 

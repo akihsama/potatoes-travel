@@ -74,7 +74,7 @@ PT.DATA.scenes = {
     ],
     props: [
       { type: 'bed', x: 250, y: 916 },                 // 床在画面左侧（背景床艺术 x≈0-420）
-      { type: 'stove', x: 985, y: 916 },               // 对齐背景右侧壁炉（炉膛中心 x≈965）
+      { type: 'stove', x: 985, y: 916, clickable: true, clickW: 95, clickH: 130 },   // 对齐背景右侧壁炉（炉膛中心 x≈965）；结局后可点击翻找遗书
       { type: 'sign', x: 1300, y: 916, text: '木屋：床可以一觉睡到清晨（回满体力并存档）· 炉火由苔藓加木头合成（1 苔藓 + 1 木头 = 2 小时）· 右侧出门是院子' },
       { type: 'diary', id: 1, x: 730, y: 690 },        // 书桌上摊开的日记（平台 620-860 / y690）
       { type: 'res', kind: 'moss', x: 265, y: 770, zone: [180, 350] },   // 窗台平台区域内随机
@@ -209,4 +209,18 @@ PT.DATA.ending = [
   '地面上，有一个小小的、\n跟着它一起移动的轮廓。',
   '—— 第一次看见自己的影子 ——',
   '谢谢你，把光带回了永夜。',
+];
+
+/* ---------------- 结局彩蛋：爷爷的最后一张笔记 ----------------
+ * 永夜解除（结局）后，木屋壁炉中可找到这张烧毁半边的泛黄纸张。
+ * 呈现：点击壁炉 → 纸张落于画面中央 → 点击 → 全屏特写（英文斜体）。
+ * 伏笔：东方河谷源头 / 石桥下的入口——续作或 DLC 的引子。 */
+PT.DATA.secretLetter = [
+  'My dear grandson,',
+  'If you have found this note, perhaps you still remember the days when we wrote these pages together.',
+  'May you — having driven back the dark and reclaimed your memory — come to know who you are, and where you belong. The potato was only a symbol; you were never anything but yourself.',
+  'When the dark swallowed the sky and the ill-omened god of black feathers descended upon this land, I could not save you all. I could only gather every light of this world and pour it all into you.',
+  'Yet the light ran out, and the unspeakable god was not defeated. Nine in ten of those left behind have lost the power of sunlight and turned to stone and cold, hollow shells — they were once our companions, who fought beside us against the god\u2019s own kin.',
+  'If you are reading this now, then you must have won.',
+  'Take the diary with you. Go to the source of the eastern river valley, to the haven I once found. The entrance lies beneath the stone bridge.',
 ];
