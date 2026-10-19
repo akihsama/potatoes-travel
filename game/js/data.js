@@ -143,7 +143,6 @@ PT.DATA.scenes = {
       { type: 'diary', id: 4, x: 710, y: 740 },
       { type: 'res', kind: 'laurel', x: 320, y: 820, zone: [290, 410] },   // 避开密林→草原 2P 落点 200（平台1）
       { type: 'res', kind: 'stone', x: 1120, y: 820, zone: [1040, 1210] },
-      { type: 'res', kind: 'star', x: 1120, y: 690, zone: [1040, 1230], zoneY: [660, 730] },   // 草原夜空也有星屑
     ],
     enemies: [
       { kind: 'rat', x: 260, y: 820, range: [200, 440] },
@@ -168,10 +167,7 @@ PT.DATA.scenes = {
       { type: 'diary', id: 5, x: 590, y: 710 },
       { type: 'res', kind: 'moonflower', x: 1060, y: 800, zone: [900, 1050] },
       { type: 'res', kind: 'moonflower', x: 1240, y: 690, zone: [1140, 1260] },   // 避开草原→密林 1P 1406 / 2P 1336 落点（平台4 上），防入场即采
-      { type: 'res', kind: 'star', x: 990, y: 640, zone: [890, 1070], zoneY: [630, 700] },      // 星屑×4：深夜密林上空
-      { type: 'res', kind: 'star', x: 1290, y: 630, zone: [1140, 1260], zoneY: [600, 660] },
-      { type: 'res', kind: 'star', x: 700, y: 660, zone: [570, 740], zoneY: [620, 690] },   // 避开测试链继承点 x=500（平台2 左端）
-      { type: 'res', kind: 'star', x: 300, y: 680, zone: [280, 400], zoneY: [640, 710] },
+      { type: 'res', kind: 'star', x: 990, y: 640, zone: [890, 1070], zoneY: [630, 700] },      // 星屑全图仅两处生成点（此处 + 炼金草地）：稀有时限料，深夜浓雾边缘的平台3 上方，跳跃可及
       { type: 'res', kind: 'wood', x: 430, y: 940, zone: [330, 540] },
       { type: 'res', kind: 'wood', x: 1450, y: 940, zone: [1380, 1520] },
       { type: 'res', kind: 'dew', x: 700, y: 940, zone: [600, 800] },

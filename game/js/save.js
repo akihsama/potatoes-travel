@@ -22,6 +22,7 @@ PT.Save = {
       flags: {
         bossSpawned: false, bossDead: false, bossPhase: 0,
         chestTaken: false,
+        dawn: false,               // 永夜已解除：结局演出后世界恢复光明，时间照常流动但不再天黑
       },
       stats: { deaths: 0, crafted: 0, pagesFound: 0 },
     };

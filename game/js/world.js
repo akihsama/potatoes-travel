@@ -29,7 +29,11 @@ PT.world = {
       else if (p.type === 'diary' || p.type === 'part') PT.ents.addPickup(p.type, p.id, p.x, p.y, PT.DATA.parts[p.id] ? PT.DATA.parts[p.id].name : '日记残页');
       else this.props.push(Object.assign({}, p));
     });
-    S.enemies.forEach(e => PT.ents.addEnemy(Object.assign({}, e)));
+    // 永夜解除后，忠于黑暗的雾蛾不再生成（光明世界里没有它们的容身之处）
+    S.enemies.forEach(e => {
+      if (PT.G.flags.dawn && e.kind === 'moth') return;
+      PT.ents.addEnemy(Object.assign({}, e));
+    });
     // 驯化的影鼠伙伴：跨场景追随玩家（最多 3 只）
     for (let i = 0; i < PT.G.tamedRatCount; i++) PT.ents.addTamedRat();
 

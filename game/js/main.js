@@ -68,13 +68,38 @@ PT.main = {
     this.$('title').classList.add('hidden');
     this.state = 'play';
     PT.ui.hintT = 0;
-    PT.ui.toast(PT.G.duo ? '欢迎回来，两只土豆蛋。永夜还在等你。' : '欢迎回来。永夜还在等你。');
+    PT.ui.toast(PT.G.flags.dawn
+      ? '光明已至。永夜结束了——世界随你走动。'
+      : (PT.G.duo ? '欢迎回来，两只土豆蛋。永夜还在等你。' : '欢迎回来。永夜还在等你。'));
   },
 
   toEnding() {
     this.state = 'ending';
     PT.world.freeze = true;
     PT.ui.startEnding();
+  },
+
+  /* 结局演出落幕：永夜解除，世界恢复光明，交还控制权继续自由活动
+   * （不再回标题——玩家可以在长夜后的光明里走遍所有场景） */
+  afterEnding() {
+    this.state = 'play';
+    PT.world.freeze = false;
+    PT.ui.ending = null;
+    this.$('ending').classList.add('hidden');
+    this.$('ending-next').classList.add('hidden');
+    const G = PT.G;
+    G.flags.dawn = true;
+    G.time = 450;                      // 07:30 清晨——光明自此长驻
+    // 忠于黑暗的雾蛾随光明退散（与微光弹驱散同款表现）
+    for (const e of PT.ents.list) {
+      if (e.type === 'enemy' && e.kind === 'moth' && e.alive) {
+        e.alive = false;
+        PT.ents.burst(e.x, e.y, 14, '#ffe9a8');
+        PT.Audio.mothDie();
+      }
+    }
+    PT.ui.toast('永夜结束了。天亮了——\n从此可以往任何想去的地方走。');
+    PT.Save.save();
   },
 
   backToTitle() {

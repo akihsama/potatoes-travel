@@ -418,7 +418,7 @@ PT.ui = {
     const e = this.ending;
     if (!e) return;
     if (e.idx >= PT.DATA.ending.length) {
-      PT.main.backToTitle();
+      PT.main.afterEnding();     // 演出结束：恢复光明，回到自由活动（而非退回标题）
     } else {
       this._endingAdvance();
     }
