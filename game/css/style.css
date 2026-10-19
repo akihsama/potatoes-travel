@@ -351,6 +351,7 @@ body.touch-on #touch-ui { display: block; }
   font-family: Georgia, 'Times New Roman', 'Songti SC', serif;
   font-style: italic; font-size: clamp(14px, 2.05vmin, 21px);
   line-height: 1.95; color: #3a2a18; margin: 0 0 .9em;
-  text-shadow: 0 0 1px rgba(58, 42, 24, .35);
+  /* 暖色纸晕：泛黄纸面上几乎不可见，文字叠到焦区时托底保证每个字可读 */
+  text-shadow: 0 0 2px rgba(235, 220, 180, .55), 0 0 1px rgba(58, 42, 24, .35);
 }
 .letter-line:last-child { margin-bottom: 0; }

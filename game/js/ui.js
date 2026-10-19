@@ -472,27 +472,103 @@ PT.ui = {
       x.fillStyle = sg; x.beginPath(); x.arc(bx, by, r, 0, Math.PI * 2); x.fill();
     }
 
-    // 烧毁半边：右下角大片焦黑（多个重叠椭圆 + 边缘柔化）
+    // 烧毁半边：右下角不规则焦黑。
+    // 焦边不是光滑圆弧——主焦线沿对角线采样 52 点，法向叠加大尺度蜿蜒（±55）、
+    // 中尺度起伏（±26）与细碎毛边（±17），焦线整体忽深忽浅；
+    // 外扩两层得到褐色过渡带（先烧成褐再渐入炭黑），另有火舌探入纸面。
+    const A = { x: 0.46 * W, y: 1.03 * H }, B = { x: 1.03 * W, y: 0.34 * H };
+    const ddx = B.x - A.x, ddy = B.y - A.y, ddl = Math.hypot(ddx, ddy);
+    const ph1 = rnd(0, 6.28), ph2 = rnd(0, 6.28), ph3 = rnd(0, 6.28);
+    const diag = [];
+    for (let i = 0; i <= 52; i++) {
+      const t = i / 52;
+      const n = Math.sin(t * 5.1 + ph1) * 55 + Math.sin(t * 11.7 + ph2) * 26
+              + Math.sin(t * 23.3 + ph3) * 9 + rnd(-8, 8);
+      diag.push({
+        x: A.x + ddx * t - ddy / ddl * n,
+        y: A.y + ddy * t + ddx / ddl * n,
+        nx: -ddy / ddl, ny: ddx / ddl,          // 单位法向：指向焦区（右下）
+      });
+    }
+    const burntPoly = (pts) => {
+      x.beginPath();
+      x.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length; i++) x.lineTo(pts[i].x, pts[i].y);
+      x.lineTo(W + 60, pts[pts.length - 1].y + 24);
+      x.lineTo(W + 60, H + 60);
+      x.lineTo(-60, H + 60);
+      x.closePath();
+    };
+    // 1) 褐色过渡带：外圈大而淡 + 内圈窄而浓（焦边外圈先烧成褐色）
+    x.fillStyle = 'rgba(96, 62, 30, .38)';
+    burntPoly(diag.map(p => ({ x: p.x + p.nx * 26, y: p.y + p.ny * 26 })));
+    x.fill();
+    x.fillStyle = 'rgba(80, 50, 24, .5)';
+    burntPoly(diag.map(p => ({ x: p.x + p.nx * 12, y: p.y + p.ny * 12 })));
+    x.fill();
+    // 2) 炭黑主体：径向渐变（核心更深、边缘渐浅，避免死黑一片）
+    const cg = x.createRadialGradient(0.80 * W, 0.86 * H, 20, 0.80 * W, 0.86 * H, 0.62 * W);
+    cg.addColorStop(0, '#160e07'); cg.addColorStop(0.6, '#241a12'); cg.addColorStop(1, '#3a2c1c');
+    x.fillStyle = cg;
+    burntPoly(diag); x.fill();
+    // 3) 火舌：焦线局部向纸面深处探进（烧得比主线更远的不规则尖角）
+    for (let i = 0; i < 4; i++) {
+      const p = diag[6 + Math.floor(Math.random() * (diag.length - 12))];
+      const ang = Math.atan2(p.ny, p.nx);                 // 焦区法向；反向即纸面方向
+      const tx = ddx / ddl, ty = ddy / ddl;               // 焦线切线
+      const into = rnd(60, 130), halfW = rnd(18, 46);
+      x.beginPath();
+      x.moveTo(p.x - tx * halfW, p.y - ty * halfW);
+      x.lineTo(p.x - Math.cos(ang) * into + rnd(-14, 14), p.y - Math.sin(ang) * into + rnd(-14, 14));
+      x.lineTo(p.x + tx * halfW, p.y + ty * halfW);
+      x.closePath();
+      x.fillStyle = cg; x.fill();
+    }
+    // 4) 余烬弧光：沿锯齿焦线双跑描边（外暗内亮）
+    const strokeEdge = () => {
+      x.beginPath();
+      x.moveTo(diag[0].x, diag[0].y);
+      for (let i = 1; i < diag.length; i++) x.lineTo(diag[i].x, diag[i].y);
+    };
     x.save();
     if (x.filter !== undefined) x.filter = 'blur(3px)';
-    x.fillStyle = '#241a12';
-    for (const [ex, ey, er] of [[0.88, 0.70, 0.36], [0.72, 0.98, 0.30], [1.02, 0.38, 0.24], [0.98, 0.92, 0.30]]) {
-      x.beginPath(); x.ellipse(W * ex, H * ey, W * er, H * er * 0.92, 0, 0, Math.PI * 2); x.fill();
-    }
+    x.strokeStyle = 'rgba(196, 88, 36, .40)'; x.lineWidth = 9; x.lineJoin = 'round';
+    strokeEdge(); x.stroke();
+    x.strokeStyle = 'rgba(232, 128, 52, .38)'; x.lineWidth = 3.5;
+    strokeEdge(); x.stroke();
     x.restore();
-    // 焦边余烬（橙红细弧，沿焦区内侧）
-    x.save();
-    if (x.filter !== undefined) x.filter = 'blur(2px)';
-    x.strokeStyle = 'rgba(196,88,36,.42)'; x.lineWidth = 7;
-    for (const [ex, ey, er] of [[0.86, 0.68, 0.345], [0.72, 0.97, 0.285], [1.0, 0.38, 0.225]]) {
-      x.beginPath(); x.ellipse(W * ex, H * ey, W * er, H * er * 0.9, 0, Math.PI * 0.9, Math.PI * 1.9); x.stroke();
+    // 4) 余烬火星：焦线附近的随机亮点
+    for (let i = 0; i < 16; i++) {
+      const p = diag[2 + Math.floor(Math.random() * (diag.length - 3))];
+      const px = p.x + p.nx * rnd(2, 14), py = p.y + p.ny * rnd(2, 14);
+      const og = x.createRadialGradient(px, py, 0, px, py, 12);
+      og.addColorStop(0, `rgba(255, 190, 110, ${rnd(0.5, 0.9)})`); og.addColorStop(1, 'rgba(255, 150, 60, 0)');
+      x.fillStyle = og; x.beginPath(); x.arc(px, py, 12, 0, Math.PI * 2); x.fill();
     }
-    x.restore();
-    // 焦洞（纸面零星烧穿）
-    for (let i = 0; i < 8; i++) {
-      const bx = rnd(W * 0.55, W * 0.99), by = rnd(H * 0.5, H * 0.99);
-      x.beginPath(); x.ellipse(bx, by, rnd(3, 11), rnd(3, 8), rnd(0, 3), 0, Math.PI * 2);
-      x.fillStyle = `rgba(22,14,9,${rnd(0.7, 0.92)})`; x.fill();
+    // 5) 焦纤维：焦线处伸出的细丝（一半探入焦区，一半扫向纸面）
+    for (let i = 0; i < 26; i++) {
+      const p = diag[3 + Math.floor(Math.random() * (diag.length - 5))];
+      const side = Math.random() < 0.5 ? 1 : -1;   // 1 = 焦区侧，-1 = 纸面侧
+      const ang = Math.atan2(p.ny, p.nx) + side * rnd(0.5, 1.4);
+      const len = rnd(10, 30);
+      x.strokeStyle = side > 0 ? `rgba(20, 12, 7, ${rnd(0.5, 0.85)})` : `rgba(122, 84, 42, ${rnd(0.25, 0.5)})`;
+      x.lineWidth = rnd(1, 2.4);
+      x.beginPath(); x.moveTo(p.x, p.y);
+      x.lineTo(p.x + Math.cos(ang) * len, p.y + Math.sin(ang) * len); x.stroke();
+    }
+    // 6) 焦洞：沿焦线分布的不规则烧穿小孔（部分跨在焦边上，像被烧掉一半）
+    for (let i = 0; i < 10; i++) {
+      const p = diag[3 + Math.floor(Math.random() * (diag.length - 6))];
+      const bx = p.x + p.nx * rnd(-10, 40), by = p.y + p.ny * rnd(-10, 40);
+      const R = rnd(3, 11);
+      x.beginPath();
+      for (let k = 0; k < 6; k++) {
+        const a = k / 6 * Math.PI * 2, rr = R * rnd(0.55, 1.25);
+        const px = bx + Math.cos(a) * rr, py = by + Math.sin(a) * rr;
+        if (k === 0) x.moveTo(px, py); else x.lineTo(px, py);
+      }
+      x.closePath();
+      x.fillStyle = `rgba(16, 10, 6, ${rnd(0.75, 0.95)})`; x.fill();
     }
     // 纸张整体旧化暗角
     const v = x.createRadialGradient(W / 2, H / 2, W * 0.30, W / 2, H / 2, W * 0.78);

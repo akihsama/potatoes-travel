@@ -33,7 +33,7 @@ PT.ents = {
   },
   addEnemy(def) {
     const base = { type: 'enemy', hp: 1, vx: 0, vy: 0, dir: -1, hurtT: 0, contactCD: 0 };
-    if (def.kind === 'rat') Object.assign(base, { w: 74, h: 62, speed: 78, hp: 1, dmg: 1 });
+    if (def.kind === 'rat') Object.assign(base, { w: 74, h: 62, speed: 78, hp: 1, dmg: 1, startleT: 0 });
     if (def.kind === 'moth') Object.assign(base, { w: 66, h: 66, speed: 0, hp: 1, dmg: 1, baseX: def.x, baseY: def.y, fleeT: 0 });
     if (def.kind === 'golem') Object.assign(base, { w: 104, h: 118, speed: 34, hp: 5, dmg: 2 });
     return this.spawn(Object.assign(base, def));
@@ -80,14 +80,17 @@ PT.ents = {
     this.spawn({ type: 'pop', x, y, text, color: color || '#f0e6c8', life: 1.3, maxLife: 1.3 });
   },
 
-  /* 压扁冲击波：震死落点附近影鼠 */
+  /* 压扁冲击波：震死落点附近野生影鼠。
+   * 友方影鼠伙伴不误伤——它始终贴在主人脚边，若无豁免则每次压扁落地都会被震死，
+   * 改为仅受惊（头顶「!」），保持伙伴的可靠在场。 */
   shockwave(x, y) {
     PT.ents.burst(x, y, 12, '#8f86a3');
     PT.world.shake(5, 0.15);
     for (const e of this.list) {
-      if (e.type === 'enemy' && e.kind === 'rat' && e.alive && Math.abs(e.x - x) < 100 && Math.abs(e.y - y) < 70) {
-        this.killRat(e);
-      }
+      if (e.type !== 'enemy' || e.kind !== 'rat' || !e.alive) continue;
+      if (Math.abs(e.x - x) >= 100 || Math.abs(e.y - y) >= 70) continue;
+      if (e.tamed) { e.startleT = 0.45; continue; }
+      this.killRat(e);
     }
   },
 
@@ -196,6 +199,7 @@ PT.ents = {
         case 'enemy': {
           if (e.kind === 'rat') {
             if (e.tamed) {
+              e.startleT = Math.max(0, e.startleT - dt);
               // 友方影鼠：跟随最近玩家；Boss 战时冲向 Boss 撕咬（每次 -2 HP）
               const tp = PT.nearestPlayer(e.x, e.y);
               const dx = tp.x - e.x;
@@ -535,6 +539,15 @@ PT.ents = {
               ctx.fillStyle = '#9fd89f';
               ctx.fillText('友', e.x, e.y - 42);
               ctx.restore();
+              if (e.startleT > 0) {
+                // 受惊：「!」气泡上飘（冲击波豁免的反馈）
+                ctx.save();
+                ctx.globalAlpha = Math.min(1, e.startleT / 0.3);
+                ctx.font = '700 20px monospace'; ctx.textAlign = 'center';
+                ctx.fillStyle = '#ffd28f';
+                ctx.fillText('!', e.x + 22, e.y - 56 - (0.45 - e.startleT) * 26);
+                ctx.restore();
+              }
             }
           }
           if (e.kind === 'moth') PT.drawImg(ctx, 'moth_side', e.x, e.y + 30, 78, e.vx > 0);
